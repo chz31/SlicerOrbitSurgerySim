@@ -186,6 +186,16 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Intersection model
         self.ui.createIntersectButton.connect('clicked(bool)', self.onCreateIntersectButton)
         self.ui.createOverlappingModelButton.connect('clicked(bool)', self.onPaintModelwithOverlapButton)
+        
+        #interaction transform
+        self.ui.plateModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        self.ui.plateModelNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
+        self.ui.orbitModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        self.ui.orbitModelNodeComboBox_2..setMRMLScene(slicer.mrmlScene)
+        self.ui.orbitLMNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        self.ui.orbitLMNodeComboBox_2..setMRMLScene(slicer.mrmlScene)
+        
+        self.ui.interactionTransformCheckbox.connect("toggled(bool)", self.onInteractionTransform)
 
         # # Buttons
         # self.ui.applyButton.connect("clicked(bool)", self.onApplyButton)
@@ -227,6 +237,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             and self.ui.plateModelSelector.currentNode() and self.ui.plateFiducialSelector.currentNode())
         #Enable posteriorStopRegistrationPushButton button
         # self.ui.posteriorStopRegistrationPushButton.enabled = bool(self.ui.initialRegistrationPushButton.enabled)
+        self.ui.interactionTransformCheckbox.enabled = bool(self.ui.plateModelNodeComboBox_2.currentNode() and self.ui.orbitModelNodeComboBox_2.currentNode()
+            and self.ui.orbitLMNodeComboBox_2.currenctNode())
     
     def onInitialRegistrationPushButton(self):
         logic = plateRegistrationLogic()
@@ -381,7 +393,16 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         segDisplayNode = segmentationNode.GetDisplayNode()
         segDisplayNode.SetSegmentVisibility(plateSegID, False)
-
+        
+    def onInteractionTransform(self):
+        interactionTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interaction_transform")
+        interactionTransformNode.GetDisplayNode().SetActiveInteractionType()
+        interactionTransformNode.GetDisplayNode().SetVisibility(True)
+        interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
+        
+        #Set center to posterior stop
+        interactionTransformNode.SetCenterOfTransformation(orbit_lm_node.GetNthControlPointPosition(1))
+        self.source_lm_node.SetAndObserveTransformNodeID(interactionTransformNode.GetID())
 
     # def initializeParameterNode(self) -> None:
     #     """Ensure parameter node exists and observed."""
