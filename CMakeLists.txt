@@ -5,9 +5,8 @@ project(orbitSurgerySim)
 #-----------------------------------------------------------------------------
 # Extension meta-information
 set(EXTENSION_HOMEPAGE "https://www.slicer.org/wiki/Documentation/Nightly/Extensions/orbitSurgerySim")
-set(EXTENSION_CATEGORY "Examples")
-set(EXTENSION_CONTRIBUTORS "Chi Zhang (Texas A&M Dentistry)")
-set(EXTENSION_DESCRIPTION "This is an example of a simple extension")
+set(EXTENSION_CONTRIBUTORS "Chi Zhang ( Texas A&M Dentistry)")
+set(EXTENSION_DESCRIPTION "For orbital plate registration")
 set(EXTENSION_ICONURL "https://www.example.com/Slicer/Extensions/orbitSurgerySim.png")
 set(EXTENSION_SCREENSHOTURLS "https://www.example.com/Slicer/Extensions/orbitSurgerySim/Screenshots/1.png")
 set(EXTENSION_DEPENDS "NA") # Specified as a list or "NA" if no dependencies

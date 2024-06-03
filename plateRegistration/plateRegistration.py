@@ -191,11 +191,17 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
         self.ui.plateModelNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
         self.ui.orbitModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.orbitModelNodeComboBox_2..setMRMLScene(slicer.mrmlScene)
+        self.ui.orbitModelNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
         self.ui.orbitLMNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.orbitLMNodeComboBox_2..setMRMLScene(slicer.mrmlScene)
-        
+        self.ui.orbitLMNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
+        #
         self.ui.interactionTransformCheckbox.connect("toggled(bool)", self.onInteractionTransform)
+        #
+        self.ui.resetToLastStepButton.connect('clicked(bool)', self.onResetToLastStepButton)
+        
+        self.ui.computeNewOverlappingButton.connect('clicked(bool)', self.onComputeNewOverlappingButton)
+        
+        self.ui.resetAllButton.connect('clicked(bool)', self.onResetAllButton)
 
         # # Buttons
         # self.ui.applyButton.connect("clicked(bool)", self.onApplyButton)
@@ -238,7 +244,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Enable posteriorStopRegistrationPushButton button
         # self.ui.posteriorStopRegistrationPushButton.enabled = bool(self.ui.initialRegistrationPushButton.enabled)
         self.ui.interactionTransformCheckbox.enabled = bool(self.ui.plateModelNodeComboBox_2.currentNode() and self.ui.orbitModelNodeComboBox_2.currentNode()
-            and self.ui.orbitLMNodeComboBox_2.currenctNode())
+            and self.ui.orbitLMNodeComboBox_2.currentNode())
+
     
     def onInitialRegistrationPushButton(self):
         logic = plateRegistrationLogic()
@@ -281,7 +288,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         # source_model_node = self.ui.plateModelSelector.currentNode()
         self.source_model_node.SetAndObserveTransformNodeID(p_stop_rotation_node.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self.source_model_node)
-        
+        #
         self.ui.createIntersectButton.enabled = True
         
         
@@ -353,14 +360,16 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Remove bone segment
         segmentationNode.GetSegmentation().RemoveSegment(boneSegID)
         #
-        plate_painted = logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.source_model_node)
-        plate_painted.SetName('plate_intersect_marked')
-        orbit_painted = logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.orbit_model_node)
-        orbit_painted.SetName('orbit_intersect_marked')
+        plate_painted_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.source_model_node, plate_painted_node)
+        plate_painted_node.SetName('plate_intersect_marked')
+        orbit_painted_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.orbit_model_node, orbit_painted_node)
+        orbit_painted_node.SetName('orbit_intersect_marked')
         #
         
-        plate_painted.GetDisplayNode().SetVisibility2D(True)
-        plate_painted.GetDisplayNode().SetSliceIntersectionThickness(2)        
+        plate_painted_node.GetDisplayNode().SetVisibility2D(True)
+        plate_painted_node.GetDisplayNode().SetSliceIntersectionThickness(2)        
 
 
         #Shrink margin
@@ -395,14 +404,187 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         segDisplayNode.SetSegmentVisibility(plateSegID, False)
         
     def onInteractionTransform(self):
-        interactionTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interaction_transform")
-        interactionTransformNode.GetDisplayNode().SetActiveInteractionType()
-        interactionTransformNode.GetDisplayNode().SetVisibility(True)
-        interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
+        if self.ui.interactionTransformCheckbox.isChecked():
+            self.ui.resetToLastStepButton.enabled = True
+            self.ui.computeNewOverlappingButton.enabled = True
+            self.interactionTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interaction_transform")
+            self.plateModelNode2 = self.ui.plateModelNodeComboBox_2.currentNode()
+            self.plateModelNode2.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            self.interactionTransformNode.CreateDefaultDisplayNodes()
+            # self.interactionTransformNode.GetDisplayNode().SetActiveInteractionType()
+            # self.interactionTransformNode.SetDisplayVisibility(True)
+            # self.interactionTransformNode.GetDisplayNode().SetVisibility(True)
+            self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
+            #Set center to posterior stop
+            self.newOrbitLmNode = self.ui.orbitLMNodeComboBox_2.currentNode()
+            self.interactionTransformNode.SetCenterOfTransformation(self.newOrbitLmNode.GetNthControlPointPosition(1))
+            #Add plate to the intraction transfrom
+            # self.newPlateModelNode = self.ui.plateModelNodeComboBox_2.currentNode()
+            # self.newPlateModelNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        # if self.fullTransformNode in locals():
+        if slicer.mrmlScene.GetFirstNodeByName('fullTransform'):
+            self.fullTransformNode = slicer.mrmlScene.GetFirstNodeByName('fullTransform')
+            self.fullTransformNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        else:
+            self.fullTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "fullTransform")
+            # self.fullTransformNode.GetDisplayNode().SetActiveInteractionType()
+            # self.fullTransformNode.GetDisplayNode().SetVisibility(False)
+            # self.fullTransformNode.GetDisplayNode().SetEditorVisibility(False)
+            #Put fullTransformNode under interactionTransformNode = np.dot(interactionTransformNode, fullTransformNode)
+            self.fullTransformNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        self.ui.resetAllButton.enabled = True
+
+
+    def onResetToLastStepButton(self):
+        transformMatrix = vtk.vtkMatrix4x4() #identiy matrix
+        self.interactionTransformNode.SetMatrixTransformToParent(transformMatrix)
+        #self.fullTransFormNode is also updated
+
+    def onComputeNewOverlappingButton(self):
+        try: 
+            intersectionNode_previous = slicer.util.getNode('intersectionModel_0')
+            intersectionNode_previous.GetDisplayNode().SetVisibility(False)
+        except MRMLNodeNotFoundException:
+            pass
+        logic = plateRegistrationLogic()
+        # self.plateModelNode2 = self.ui.plateModelNodeComboBox_2.currentNode()
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.plateModelNode2)
+        self.orbitModelNode2 = self.ui.orbitModelNodeComboBox_2.currentNode()
+        self.orbitLmNode2 = self.ui.orbitLMNodeComboBox_2.currentNode()
+        collisionFlag, numberOfCollisions = logic.collision_detection(self.plateModelNode2, self.orbitModelNode2)
+        #output information
+        self.ui.collisionInfoBox2.clear
+        if collisionFlag == True:
+            self.ui.collisionInfoBox2.insertPlainText(
+              f":: Collision between model and plate detected. There are {numberOfCollisions} collision points. \n"
+            )
+            intersector = logic.intersection_marker(self.plateModelNode2, self.orbitModelNode2)
+            intersectionModel = slicer.modules.models.logic().AddModel(intersector.GetOutputDataObject(0))
+            intersectionModel.SetName("intersectionModel_0")
+            yellow = [255, 255, 0]
+            intersectionModel.GetDisplayNode().SetColor(yellow)
+            intersectionModel.GetDisplayNode().SetVisibility2D(True)
+            intersectionModel.GetDisplayNode().SetSliceIntersectionThickness(7)
+        else:
+            self.ui.collisionInfoBox2.insertPlainText(
+              f":: No collision detected. \n"
+            )
         
-        #Set center to posterior stop
-        interactionTransformNode.SetCenterOfTransformation(orbit_lm_node.GetNthControlPointPosition(1))
-        self.source_lm_node.SetAndObserveTransformNodeID(interactionTransformNode.GetID())
+        #Create segments from plate and orbit models
+        segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+        segmentationNode.CreateDefaultDisplayNodes()
+        segmentationNode.SetName('segmentation_2')
+        slicer.modules.segmentations.logic().ImportModelToSegmentationNode(self.plateModelNode2, segmentationNode)
+        slicer.modules.segmentations.logic().ImportModelToSegmentationNode(self.orbitModelNode2, segmentationNode)
+        
+        #Get master volume 
+        masterVolumeNode = self.ui.inputOrbitVolSelector.currentNode()
+        
+        #Create segment editor to get access to effects
+        segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+        segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
+        segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentEditorNode")
+        segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+        segmentEditorWidget.setSegmentationNode(segmentationNode)        
+
+        #Logic operator: intersect
+        segmentEditorWidget.setActiveEffectByName("Logical operators")
+        effect = segmentEditorWidget.activeEffect()
+        effect.setParameter("Operation","INTERSECT")
+        #get segments
+        plateSegID = segmentationNode.GetSegmentation().GetSegmentIDs()[0]
+        boneSegID = segmentationNode.GetSegmentation().GetSegmentIDs()[1]
+        plateSeg = segmentationNode.GetSegmentation().GetSegment(plateSegID)
+        boneSeg = segmentationNode.GetSegmentation().GetSegment(boneSegID)
+        #
+        segmentEditorNode.SetSelectedSegmentID(plateSegID)
+        effect.setParameter("ModifierSegmentID", boneSegID)
+        effect.self().onApply()
+
+        #Grow margin
+        segmentEditorWidget.setActiveEffectByName("Margin")
+        effect = segmentEditorWidget.activeEffect()
+        effect.setParameter("MarginSizeMm", 0.25)
+        segmentEditorNode.SetSelectedSegmentID(plateSegID)
+        effect.self().onApply()
+
+        #Remove bone segment
+        segmentationNode.GetSegmentation().RemoveSegment(boneSegID)
+        #
+        logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.plateModelNode2, self.plateModelNode2)
+        # plate_painted2.SetName('plate_intersect_marked_interaction')
+        logic.paint_model_by_volume(segmentationNode, masterVolumeNode, self.orbitModelNode2, self.orbitModelNode2)
+        # orbit_painted2.SetName('orbit_intersect_marked_interaction')
+        
+        self.plateModelNode2.GetDisplayNode().SetVisibility2D(True)
+        self.plateModelNode2.GetDisplayNode().SetSliceIntersectionThickness(2)
+        
+        # self.plateModelNode2.GetDisplayNode().SetAndObserveColorNodeID("Iron")
+        # self.plateModelNode2.GetDisplayNode().SetScalarVisibility(True)
+
+        #Shrink margin
+        segmentEditorWidget.setActiveEffectByName("Margin")
+        effect = segmentEditorWidget.activeEffect()
+        effect.setParameter("MarginSizeMm", -0.25)
+        segmentEditorNode.SetSelectedSegmentID(plateSegID)
+        effect.self().onApply()
+
+        #Segment statistics
+        import SegmentStatistics
+        segStatLogic = SegmentStatistics.SegmentStatisticsLogic()
+        segStatLogic.getParameterNode().SetParameter("Segmentation", segmentationNode.GetID())
+        segStatLogic.computeStatistics()
+        stats = segStatLogic.getStatistics()
+
+        volume_mm3 = stats[plateSegID,"LabelmapSegmentStatisticsPlugin.volume_mm3"]
+        print(stats)
+        print(volume_mm3)
+        self.ui.collisionInfoBox2.insertPlainText(
+          f":: the overlapping volume between the plate and the orbit is {volume_mm3} mm3. \n"
+        )
+
+        segDisplayNode = segmentationNode.GetDisplayNode()
+        segDisplayNode.SetSegmentVisibility(plateSegID, False)
+
+        self.ui.interactionTransformCheckbox.checked = 0
+        self.ui.resetToLastStepButton.enabled = False
+        self.ui.computeNewOverlappingButton.enabled = False
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.fullTransformNode)
+        #
+        # self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(False)
+        slicer.mrmlScene.RemoveNode(self.interactionTransformNode)
+        # self.ui.resetAllButton.enabled = True
+
+
+
+
+    def onResetAllButton(self):
+        self.ui.interactionTransformCheckbox.checked = 0
+        self.ui.resetToLastStepButton.enabled = False
+        self.ui.computeNewOverlappingButton.enabled = False
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.fullTransformNode)
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.plateModelNode2)
+
+        # Clone the fulltransform node for inverse
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        itemIDToClone = shNode.GetItemByDataNode(self.fullTransformNode)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        self.fullInverseTransformNode = shNode.GetItemDataNode(clonedItemID)
+        self.fullInverseTransformNode.SetName('fullInverseTransform')
+        self.fullInverseTransformNode.Inverse()
+        self.plateModelNode2.SetAndObserveTransformNodeID(self.fullInverseTransformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.plateModelNode2)
+        
+        # Clone the fullTransformNode from the last step
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        itemIDToClone = shNode.GetItemByDataNode(self.fullTransformNode)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        self.fullTransformNode_previous = shNode.GetItemDataNode(clonedItemID)
+        self.fullTransformNode_previous.SetName('fullTransform_previous')
+        
+        slicer.mrmlScene.RemoveNode(self.fullTransformNode)
+        self.ui.resetAllButton.enabled = False
+
 
     # def initializeParameterNode(self) -> None:
     #     """Ensure parameter node exists and observed."""
@@ -651,17 +833,17 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         return intersector
 
 
-    def paint_model_by_volume(self, segmentationNode, masterVolumeNode, InputModelNode):
+    def paint_model_by_volume(self, segmentationNode, masterVolumeNode, InputModelNode, outputModelNode):
         #segmentationNode contains plate and orbit segments
         #Use Probe Volume with Model
-        outputModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        # outputModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
         parameters = {}
         parameters['InputVolume'] = segmentationNode.GetID()
         parameters['InputModel'] = InputModelNode.GetID()
         parameters['OutputModel'] = outputModelNode.GetID()
         probe = slicer.modules.probevolumewithmodel
         slicer.cli.run(probe, None, parameters, wait_for_completion=True)
-        return outputModelNode
+        return
         
 
 
