@@ -253,7 +253,7 @@
           <bool>false</bool>
          </property>
          <layout class="QFormLayout" name="runSingleALPACAWidgetLayout">
-          <item row="0" column="1">
+          <item row="1" column="1">
            <widget class="QPushButton" name="createIntersectButton">
             <property name="enabled">
              <bool>false</bool>
@@ -262,11 +262,11 @@
              <string>Switch the the Advanced Settings tab to change parameters and run/re-run ALPACA</string>
             </property>
             <property name="text">
-             <string>Create intersection model</string>
+             <string>Mark intersection</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="1">
            <widget class="QPushButton" name="createOverlappingModelButton">
             <property name="enabled">
              <bool>false</bool>
@@ -276,8 +276,18 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="3" column="1">
            <widget class="QPlainTextEdit" name="collisionInfoBox"/>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="interactionTransformCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Enable 3D interaction transform handle</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -407,16 +417,6 @@
          </property>
          <layout class="QFormLayout" name="rigidRegistrationWidget">
           <item row="0" column="1">
-           <widget class="QCheckBox" name="interactionTransformCheckbox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Enable 3D interaction transform handle</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
            <widget class="QPushButton" name="resetToLastStepButton">
             <property name="enabled">
              <bool>false</bool>
@@ -426,7 +426,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="1" column="1">
            <widget class="QPushButton" name="computeNewOverlappingButton">
             <property name="enabled">
              <bool>false</bool>
@@ -436,7 +436,10 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="2" column="1">
+           <widget class="QPlainTextEdit" name="collisionInfoBox2"/>
+          </item>
+          <item row="3" column="1">
            <widget class="QPushButton" name="resetAllButton">
             <property name="enabled">
              <bool>false</bool>
@@ -445,9 +448,6 @@
              <string>Reset all</string>
             </property>
            </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPlainTextEdit" name="collisionInfoBox2"/>
           </item>
          </layout>
         </widget>
