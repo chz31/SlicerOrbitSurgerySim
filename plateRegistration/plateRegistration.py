@@ -18,6 +18,7 @@ from slicer import vtkMRMLScalarVolumeNode
 
 import numpy as np
 
+import qt
 #
 # plateRegistration
 #
@@ -170,10 +171,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Input connections
         self.ui.inputOrbitVolSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
         self.ui.inputOrbitVolSelector.setMRMLScene(slicer.mrmlScene)
+        # self.ui.inputOrbitModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        # self.ui.inputOrbitModelSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.inputOrbitModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
         self.ui.inputOrbitModelSelector.setMRMLScene(slicer.mrmlScene)
-        self.ui.orbitFiducialSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.orbitFiducialSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.plateModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
         self.ui.plateModelSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.plateFiducialSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
@@ -188,12 +189,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.createOverlappingModelButton.connect('clicked(bool)', self.onPaintModelwithOverlapButton)
         
         #interaction transform
-        self.ui.plateModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.plateModelNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
-        self.ui.orbitModelNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.orbitModelNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
-        self.ui.orbitLMNodeComboBox_2.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-        self.ui.orbitLMNodeComboBox_2.setMRMLScene(slicer.mrmlScene)
+        # self.ui.plateModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        # self.ui.plateModelSelector.setMRMLScene(slicer.mrmlScene)
+        # self.ui.inputOrbitModelSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        # self.ui.inputOrbitModelSelector.setMRMLScene(slicer.mrmlScene)
+        self.ui.orbitFiducialSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+        self.ui.orbitFiducialSelector.setMRMLScene(slicer.mrmlScene)
         #
         self.ui.interactionTransformCheckbox.connect("toggled(bool)", self.onInteractionTransform)
         #
@@ -208,6 +209,11 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         # # Make sure parameter node is initialized (needed for module reload)
         # self.initializeParameterNode()
+        
+        self.timer = qt.QTimer()
+        self.timer.setInterval(500) #ms
+        self.timer.setSingleShot(True)
+        self.timer.connect("timeout()", self.timeout)
 
     def cleanup(self) -> None:
         """Called when the application closes and the module widget is destroyed."""
@@ -239,12 +245,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
     
     def onSelect(self):
         #Enable initialRegistration push button
-        self.ui.initialRegistrationPushButton.enabled = bool(self.ui.inputOrbitVolSelector.currentNode() and self.ui.inputOrbitModelSelector.currentNode() and self.ui.orbitFiducialSelector.currentNode()
+        self.ui.initialRegistrationPushButton.enabled = bool(self.ui.inputOrbitVolSelector.currentNode() and self.ui.inputOrbitModelSelector.currentNode() and self.ui.inputOrbitModelSelector.currentNode()
             and self.ui.plateModelSelector.currentNode() and self.ui.plateFiducialSelector.currentNode())
         #Enable posteriorStopRegistrationPushButton button
         # self.ui.posteriorStopRegistrationPushButton.enabled = bool(self.ui.initialRegistrationPushButton.enabled)
-        self.ui.interactionTransformCheckbox.enabled = bool(self.ui.plateModelNodeComboBox_2.currentNode() and self.ui.orbitModelNodeComboBox_2.currentNode()
-            and self.ui.orbitLMNodeComboBox_2.currentNode())
+        # self.ui.interactionTransformCheckbox.enabled = bool(self.ui.plateModelSelector_2.currentNode() and self.ui.inputOrbitModelSelector_2.currentNode()
+        #     and self.ui.orbitFiducialSelector_2.currentNode())
 
     
     def onInitialRegistrationPushButton(self):
@@ -267,7 +273,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
     def onRotation_p_stop_pushButton(self):
         logic = plateRegistrationLogic()
         # source_lm_node = self.ui.plateFiducialSelector.currentNode()
-        # target_lm_node = self.ui.orbitFiducialSelector.currentNode()
+        # target_lm_node = self.ui.inputOrbitModelSelector.currentNode()
         align_p_stop_transform = logic.align_p_stop(self.source_lm_node, self.target_lm_node)
         print(align_p_stop_transform)
         alignPStopTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "align_p_stop_transform")
@@ -289,21 +295,31 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.source_model_node.SetAndObserveTransformNodeID(p_stop_rotation_node.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self.source_model_node)
         #
+        self.ui.interactionTransformCheckbox.enabled = True
         self.ui.createIntersectButton.enabled = True
         
         
         
     def onCreateIntersectButton(self):
         logic = plateRegistrationLogic()
-        self.orbit_model_node = self.ui.inputOrbitModelSelector.currentNode()
-        collisionFlag, numberOfCollisions = logic.collision_detection(self.source_model_node, self.orbit_model_node)
+        #clone plate remesh
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        itemIDToClone = shNode.GetItemByDataNode(self.plateRemeshNode)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        self.plateRemeshNode_clone = shNode.GetItemDataNode(clonedItemID)
+        
+        #Add to interaction trasnform and harden it
+        self.plateRemeshNode_clone.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.plateRemeshNode_clone)
+        #
+        collisionFlag, numberOfCollisions = logic.collision_detection(self.plateRemeshNode_clone, self.orbitModelCropped)
         #output information
         self.ui.collisionInfoBox.clear
         if collisionFlag == True:
             self.ui.collisionInfoBox.insertPlainText(
               f":: Collision between model and plate detected. There are {numberOfCollisions} collision points. \n"
             )
-            intersector = logic.intersection_marker(self.source_model_node, self.orbit_model_node)
+            intersector = logic.intersection_marker(self.plateRemeshNode_clone, self.orbitModelCropped)
             intersectionModel = slicer.modules.models.logic().AddModel(intersector.GetOutputDataObject(0))
             intersectionModel.SetName("intersectionModel_0")
             yellow = [255, 255, 0]
@@ -315,6 +331,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
               f":: No collision detected. \n"
             )
         self.ui.createOverlappingModelButton.enabled = True
+        #Remove nodes
+        slicer.mrmlScene.RemoveNode(self.plateRemeshNode_clone)
     
     
     def onPaintModelwithOverlapButton(self):
@@ -408,18 +426,18 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.resetToLastStepButton.enabled = True
             self.ui.computeNewOverlappingButton.enabled = True
             self.interactionTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interaction_transform")
-            self.plateModelNode2 = self.ui.plateModelNodeComboBox_2.currentNode()
-            self.plateModelNode2.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            self.plateModelNode2 = self.ui.plateModelSelector.currentNode()
+            # self.plateModelNode2.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
             self.interactionTransformNode.CreateDefaultDisplayNodes()
             # self.interactionTransformNode.GetDisplayNode().SetActiveInteractionType()
             # self.interactionTransformNode.SetDisplayVisibility(True)
             # self.interactionTransformNode.GetDisplayNode().SetVisibility(True)
             self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
             #Set center to posterior stop
-            self.newOrbitLmNode = self.ui.orbitLMNodeComboBox_2.currentNode()
+            self.newOrbitLmNode = self.ui.orbitFiducialSelector.currentNode()
             self.interactionTransformNode.SetCenterOfTransformation(self.newOrbitLmNode.GetNthControlPointPosition(1))
             #Add plate to the intraction transfrom
-            # self.newPlateModelNode = self.ui.plateModelNodeComboBox_2.currentNode()
+            # self.newPlateModelNode = self.ui.plateModelSelector_2.currentNode()
             # self.newPlateModelNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
         # if self.fullTransformNode in locals():
         if slicer.mrmlScene.GetFirstNodeByName('fullTransform'):
@@ -434,6 +452,153 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.fullTransformNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
         self.ui.resetAllButton.enabled = True
 
+        #remesh plate model to 10k points
+        import SurfaceToolbox
+        surfaceToolboxLogic = SurfaceToolbox.SurfaceToolboxLogic()
+        self.plateRemeshNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        self.plateRemeshNode.SetName("plate_remesh")
+        self.plateRemeshNode.CreateDefaultDisplayNodes()
+        self.plateRemeshNode.AddDefaultStorageNode()
+        surfaceToolboxLogic.remesh(inputModel = self.source_model_node, outputModel=self.plateRemeshNode, subdivide=0, clusters=10000)
+        self.source_model_node.GetDisplayNode().SetVisibility(False)
+        self.plateRemeshNode.GetDisplayNode().SetVisibility(True)
+        self.plateRemeshNode.GetDisplayNode().SetVisibility2D(True)
+        self.plateRemeshNode.GetDisplayNode().SetSliceIntersectionThickness(3)
+        self.plateRemeshNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+
+        #Connect to the timer
+        try:
+            self.fullTransformNode.RemoveObserver(observerTag1)
+        except:
+            pass
+        observerTag1 = self.fullTransformNode.AddObserver(slicer.vtkMRMLTransformNode.TransformModifiedEvent, self.executeTimer)
+
+    def timerFunction(self):
+        self.timer.start()
+
+    def executeTimer(self, caller, eventid):
+        # print("found event")
+        self.timerFunction()
+        # print("event found2")
+        #When modifier the transform, update timer
+
+    def timeout(self):
+        logic = plateRegistrationLogic()
+        print("timeout")
+        #Turn remeshed plate to labelmap and create an ROI fit to it
+        segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
+        segmentationNode.CreateDefaultDisplayNodes()
+        segmentationNode.SetName('segmentation_plate_down')
+        slicer.modules.segmentations.logic().ImportModelToSegmentationNode(self.plateRemeshNode, segmentationNode)
+        segmentationNode.CreateBinaryLabelmapRepresentation()
+        outputLabelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLLabelMapVolumeNode")
+        slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(segmentationNode, outputLabelmapVolumeNode)
+        roiNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsROINode")
+        roiNode.CreateDefaultDisplayNodes()
+        cropVolumeParameters = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLCropVolumeParametersNode")
+        cropVolumeParameters.SetInputVolumeNodeID(outputLabelmapVolumeNode.GetID())
+        cropVolumeParameters.SetROINodeID(roiNode.GetID())
+        slicer.modules.cropvolume.logic().SnapROIToVoxelGrid(cropVolumeParameters)  # optional (rotates the ROI to match the volume axis directions)
+        slicer.modules.cropvolume.logic().FitROIToInputVolume(cropVolumeParameters)
+        slicer.mrmlScene.RemoveNode(cropVolumeParameters)
+        slicer.mrmlScene.RemoveNode(segmentationNode)
+        #
+        #Use ROI to crop the orbit model; dynamic modeler
+        try:
+            slicer.mrmlScene.RemoveNode(self.orbitModelCropped)
+        except:
+            pass
+        roiCutTool = slicer.vtkSlicerDynamicModelerROICutTool()
+        
+        self.orbitModelCropped = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        self.orbitModelCropped.SetName("orbit_cropped")
+        self.orbitModelCropped.CreateDefaultDisplayNodes()
+        self.plateRemeshNode.AddDefaultStorageNode()
+        
+        dynamicModelerNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLDynamicModelerNode")
+        dynamicModelerNode.SetToolName("ROI cut")
+        self.orbit_model_node = self.ui.inputOrbitModelSelector.currentNode()
+        # self.orbit_model_node.GetDisplayNode().SetColor([255, 255, 255])
+        self.orbit_model_node.GetDisplayNode().SetOpacity(0.6)
+        dynamicModelerNode.SetNodeReferenceID("ROICut.InputModel", self.orbit_model_node.GetID())
+        dynamicModelerNode.SetNodeReferenceID("ROICut.InputROI", roiNode.GetID())
+        dynamicModelerNode.SetNodeReferenceID("ROICut.OutputPositiveModel", self.orbitModelCropped.GetID())
+        slicer.modules.dynamicmodeler.logic().RunDynamicModelerTool(dynamicModelerNode)
+        roiNode.GetDisplayNode().SetVisibility(False)
+        
+        #remesh cropped orbit
+        import SurfaceToolbox
+        surfaceToolboxLogic = SurfaceToolbox.SurfaceToolboxLogic()
+        # orbitModelCropped_remesh = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+        # orbitModelCropped_remesh.SetName("orbit_remesh")
+        # orbitModelCropped_remesh.CreateDefaultDisplayNodes()
+        # orbitModelCropped_remesh.AddDefaultStorageNode()
+        surfaceToolboxLogic.remesh(inputModel = self.orbitModelCropped, outputModel=self.orbitModelCropped, subdivide=0, clusters=10000)
+        self.orbitModelCropped.GetDisplayNode().SetVisibility(True)
+        
+        collisionFlag, numberOfCollisions = logic.collision_detection(plate_node = self.plateRemeshNode, orbit_node = self.orbitModelCropped)
+        if collisionFlag == False:
+            self.ui.collisionInfoBox.insertPlainText(
+              f":: No collision detected. \n"
+            )
+        else:
+            print( "{} Collisions Detected".format( numberOfCollisions ) )
+            #If collision is detected, do a model to model distance and get a heatmap
+            # plateMesh = slicer.util.getNode('ouputDistanceMap')
+            #create plate heatmap
+            slicer.vtkSlicerTransformLogic().hardenTransform(self.plateRemeshNode)
+            plate_distanceMap, self.plateRemeshNode=logic.heatmap(templateMesh = self.plateRemeshNode, currentMesh = self.orbitModelCropped)
+            d = self.plateRemeshNode.GetDisplayNode()
+            d.SetScalarVisibility(True)
+            d.SetActiveScalarName('Distance')
+            d.SetAndObserveColorNodeID("RedGreenBlue")
+            d.SetScalarRangeFlagFromString('Manual')
+            d.SetScalarRange(-3, 0.5)
+            # d.SetThresholdEnabled(True)
+            # d.SetThresholdRange(-1, 1)
+            #Add plate node to the interaction transform again in the end
+            # transformMatrix = vtk.vtkMatrix4x4() #identiy matrix
+            # self.interactionTransformNode.SetMatrixTransformToParent(transformMatrix)
+            # self.plateRemeshNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            # slicer.mrmlScene.RemoveNode(self.interactionTransformNode)
+            # self.onInteractionTransform()
+            #create a new plate_remesh from original model and add to transform
+            # #apply a distance map to it and remove the last one
+            # import SurfaceToolbox
+            # surfaceToolboxLogic = SurfaceToolbox.SurfaceToolboxLogic()
+            # self.plateRemeshNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode")
+            # self.plateRemeshNode.SetName("plate_remesh")
+            # self.plateRemeshNode.CreateDefaultDisplayNodes()
+            # self.plateRemeshNode.AddDefaultStorageNode()
+            # surfaceToolboxLogic.remesh(inputModel = self.source_model_node, outputModel=self.plateRemeshNode, subdivide=0, clusters=10000)
+            # self.source_model_node.GetDisplayNode().SetVisibility(False)
+            # self.plateRemeshNode.GetDisplayNode().SetVisibility(True)
+            #Clone current interaction transform and inverse it
+            shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            itemIDToClone = shNode.GetItemByDataNode(self.interactionTransformNode)
+            clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+            self.interactionTransform_inverse = shNode.GetItemDataNode(clonedItemID)
+            self.interactionTransform_inverse.SetName('interactionTransform_inverse')
+            self.interactionTransform_inverse.Inverse()
+            #
+            #Inverse transform the plateRemesh node and add back to interaction transform
+            self.plateRemeshNode.SetAndObserveTransformNodeID(self.interactionTransform_inverse.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(self.plateRemeshNode)
+            self.plateRemeshNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            slicer.mrmlScene.RemoveNode(self.interactionTransform_inverse)
+            #remove plateRemeshNode
+            # slicer.mrmlScene.RemoveNode(self.plateRemeshNode)
+            
+            #create orbit heatmap
+            orbit_distanceMap, self.orbitModelCropped=logic.heatmap(templateMesh = self.orbitModelCropped, currentMesh = self.plateRemeshNode)
+            d = self.orbitModelCropped.GetDisplayNode()
+            d.SetScalarVisibility(True)
+            d.SetActiveScalarName('Distance')
+            d.SetAndObserveColorNodeID("RedGreenBlue")
+            d.SetScalarRangeFlagFromString('Manual')
+            d.SetScalarRange(-2, 2)
+            d.SetThresholdEnabled(True)
+            d.SetThresholdRange(0, 2)
 
     def onResetToLastStepButton(self):
         transformMatrix = vtk.vtkMatrix4x4() #identiy matrix
@@ -447,10 +612,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         except MRMLNodeNotFoundException:
             pass
         logic = plateRegistrationLogic()
-        # self.plateModelNode2 = self.ui.plateModelNodeComboBox_2.currentNode()
+        # self.plateModelNode2 = self.ui.plateModelSelector_2.currentNode()
         slicer.vtkSlicerTransformLogic().hardenTransform(self.plateModelNode2)
-        self.orbitModelNode2 = self.ui.orbitModelNodeComboBox_2.currentNode()
-        self.orbitLmNode2 = self.ui.orbitLMNodeComboBox_2.currentNode()
+        self.orbitModelNode2 = self.ui.inputOrbitModelSelector.currentNode()
+        self.orbitLmNode2 = self.ui.orbitFiducialSelector.currentNode()
         collisionFlag, numberOfCollisions = logic.collision_detection(self.plateModelNode2, self.orbitModelNode2)
         #output information
         self.ui.collisionInfoBox2.clear
@@ -819,7 +984,25 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         #
         return collisionFlag, numberOfCollisions
       
+
+    def heatmap(self, templateMesh, currentMesh):
+        distanceFilter = vtk.vtkDistancePolyDataFilter()
+        distanceFilter.SetInputData(0,templateMesh.GetPolyData())
+        distanceFilter.SetInputData(1,currentMesh.GetPolyData())
+        # distanceFilter.SetSignedDistance(signedDistanceOption)
+        distanceFilter.SignedDistanceOn()
+        distanceFilter.Update()
         
+        distanceMap = distanceFilter.GetOutput()
+        distanceArray = distanceMap.GetPointData().GetArray('Distance')
+        #meanDistance = np.average(distanceArray)
+        # meanDistance = self.rmse(distanceArray)
+        # outputNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode","ouputDistanceMap")
+        templateMesh.SetAndObservePolyData(distanceMap)
+        return distanceMap, templateMesh
+
+
+
     def intersection_marker(self, plate_model_node, orbit_model_node):
         intersector = vtk.vtkIntersectionPolyDataFilter()
         intersector.SetInputConnection(0,plate_model_node.GetPolyDataConnection())
