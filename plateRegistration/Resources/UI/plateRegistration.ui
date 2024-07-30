@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>804</width>
-    <height>625</height>
+    <height>797</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -253,6 +253,16 @@
           <bool>false</bool>
          </property>
          <layout class="QFormLayout" name="runSingleALPACAWidgetLayout">
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="interactionTransformCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Enable 3D interaction transform handle</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="1">
            <widget class="QPushButton" name="createIntersectButton">
             <property name="enabled">
@@ -267,25 +277,35 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QPushButton" name="createOverlappingModelButton">
+           <widget class="QPushButton" name="realignHandleToPStopButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Mark overlapping area</string>
+             <string>Realign posterior stop</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QPlainTextEdit" name="collisionInfoBox"/>
-          </item>
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="interactionTransformCheckbox">
+           <widget class="QPushButton" name="resetToLastStepButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Enable 3D interaction transform handle</string>
+             <string>Reset to last step</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QPlainTextEdit" name="collisionInfoBox"/>
+          </item>
+          <item row="4" column="1">
+           <widget class="QPushButton" name="resetAllButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Reset All</string>
             </property>
            </widget>
           </item>
@@ -298,161 +318,7 @@
       <attribute name="title">
        <string>Manual adjustment</string>
       </attribute>
-      <layout class="QVBoxLayout" name="advancedSettingsLayout">
-       <item>
-        <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Inputs</string>
-         </property>
-         <property name="collapsed">
-          <bool>false</bool>
-         </property>
-         <layout class="QFormLayout" name="pointDensityWidgetLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="pointDensityAdvancedLabel">
-            <property name="text">
-             <string>Plate model</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="qMRMLNodeComboBox" name="plateModelNodeComboBox_2">
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Orbit model</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="qMRMLNodeComboBox" name="orbitModelNodeComboBox_2">
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Orbit landmarks</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="qMRMLNodeComboBox" name="orbitLMNodeComboBox_2">
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLMarkupsFiducialNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="ctkCollapsibleButton" name="interactionHandleCollapsibleButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Interaction transform handle</string>
-         </property>
-         <property name="collapsed">
-          <bool>false</bool>
-         </property>
-         <layout class="QFormLayout" name="rigidRegistrationWidget">
-          <item row="0" column="1">
-           <widget class="QPushButton" name="resetToLastStepButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Reset to last step</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="computeNewOverlappingButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Create intersection model and compute overlapping</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QPlainTextEdit" name="collisionInfoBox2"/>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPushButton" name="resetAllButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Reset all</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
+      <layout class="QVBoxLayout" name="advancedSettingsLayout"/>
      </widget>
     </widget>
    </item>
