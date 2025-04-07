@@ -210,6 +210,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateTransformSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
         self.ui.projectPointsButton.connect('clicked(bool)', self.onProjectPoints)
+        self.ui.compareFitnessButton.connect('clicked(bool)', self.onCompareFitness)
 
         # # Buttons
         # self.ui.applyButton.connect("clicked(bool)", self.onApplyButton)
@@ -963,11 +964,123 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                 slicer.util.saveNode(self.plateBoundaryLMNode, outputFilePath)
                 outputFilePath = os.path.join(outputSubDir, self.plateBoundaryLMNode.GetName()+"_projected_to_orbit.mrk.json")
                 slicer.util.saveNode(self.projectedPlateLMNode, outputFilePath)
+        return
+
+
+
     
-    
-    def compareFitness(self):
-        #Retreat files from the output root
-        #For the 
+    def onCompareFitness(self):
+        #Retrieve files from the output root
+        import os
+        projectLMOutputRoot = self.ui.fitnessOutoutDir.currentPath
+        print("projectLMOutputRoot")
+        # dirList = os.listdir(projectLMOutputRoot)
+        dirList = [item for item in os.listdir(projectLMOutputRoot) if os.path.isdir(os.path.join(projectLMOutputRoot, item))]
+        print(f"dirlist is {dirList}")
+        if len(dirList) < 1:
+            logging.error('No folders for computing plate fitness. Project the landmarks first')
+            return
+        allLMData = []
+        allLMNames = []
+        for folder in dirList:
+            #store each metric in a list of fidual array
+            subfolderPath = os.path.join(projectLMOutputRoot, folder)
+            for file in os.listdir(subfolderPath):
+                if file.endswith((".fscv", ".json")):
+                    lmNode = slicer.util.loadMarkups(os.path.join(subfolderPath, file))
+                    lm = np.zeros(shape=(lmNode.GetNumberOfControlPoints(), 3))
+                    point = [0, 0, 0]
+                    for i in range(lmNode.GetNumberOfControlPoints()):
+                        lmNode.GetNthControlPointPosition(i, point)
+                        lm[i, :] = point
+                    allLMData.append(lm)
+                    allLMNames.append(os.path.basename(file))
+                    slicer.mrmlScene.RemoveNode(lmNode)
+        allEdgeDists = []
+        meanEdgeDistsList = []
+        counters = [x for x in range(len(allLMData)-1) if x % 2 == 0]
+        for i in counters:
+            edgeLm = allLMData[i]
+            edgeLmProj = allLMData[i+1]
+            edgeLm_dist = np.sqrt(np.sum(np.square(edgeLm-edgeLmProj), axis = 1))
+            allEdgeDists.append(edgeLm_dist)
+            meanEdgeDistsList.append(np.mean(edgeLm_dist))
+        #
+        setsNum = len(dirList)
+        print(f"allLMNames are {allLMNames}")
+        print(f"setsNum is {setsNum}")
+        variableNum = int(len(allEdgeDists)/setsNum)
+        print(f"variableNum is {variableNum}")
+        allEdgeDistsArr = np.reshape(allEdgeDists, (setsNum, variableNum, edgeLm.shape[0]))
+        print(allEdgeDistsArr)
+        meanEdgeDistsArr = np.reshape(meanEdgeDistsList, (setsNum, variableNum))
+        print(meanEdgeDistsArr)
+        #ranking
+        rankArray = np.zeros(shape = meanEdgeDistsArr.shape)
+        for i in range(meanEdgeDistsArr.shape[1]):
+            rankArray[:, i] = [sorted(meanEdgeDistsArr[:, i]).index(j) for j in meanEdgeDistsArr[:, i]]
+        #Overall ranking
+        rankScoreSum = np.sum(rankArray, axis = 1)
+        plateRanks = [sorted(rankScoreSum).index(j) for j in rankScoreSum]
+        print(rankArray)
+        print(rankScoreSum)
+        print(plateRanks)
+        
+        self.ui.fitnessRankInfoBox.clear
+        self.ui.fitnessRankInfoBox.insertPlainText(
+          f":: The ranks of plate fitness are. \n"
+        )
+        # self.ui.fitnessRankInfoBox.insertPlainText(
+        #   f":: {}The ranks of plate fitness are. \n"
+        # )
+        for i in range(len(dirList)):
+            self.ui.fitnessRankInfoBox.insertPlainText(
+              f":: {dirList[i]}: rank {plateRanks[i]+1}. \n"
+            )
+        
+        #plot mean distance
+        # makeScatterPlotWithFactors(
+        # self, dataArray, factors, title, xAxisName, yAxisName, subjectID
+        # ):
+        
+        logic = plateRegistrationLogic()
+        namesCounter = [x for x in range(len(allLMNames)-1) if x % 2 == 0]
+        measurementNames = [allLMNames[i] for i in namesCounter]
+        measurementNames = np.array_split(measurementNames, setsNum)
+        meanPlotTitle = "Mean distances plot"
+        
+        #Matplot lib
+        xLabel = "Plate margins"
+        logic.matplotlibScatterPlot(meanEdgeDistsArr, dirList, meanPlotTitle, xLabel, projectLMOutputRoot)
+
+        #Plot mean distances in Slicer
+        meanDistsScatterPlot = logic.makeScatterPlotWithFactors(
+            meanEdgeDistsArr, dirList, meanPlotTitle, "Measurements", "Distances(mm)", measurementNames
+            )
+        
+        # Switch to a Slicer layout that contains a plot view for plotwidget
+        layoutManager = slicer.app.layoutManager()
+        layoutManager.setLayout(503)
+        
+        slicer.modules.plots.logic().ShowChartInLayout(meanDistsScatterPlot)
+
+        plotWidget = layoutManager.plotWidget(0)
+        plotViewNode = plotWidget.mrmlPlotViewNode()
+        plotViewNode.SetPlotChartNodeID(meanDistsScatterPlot.GetID())
+        
+
+        #Plot each plate margin distance in allEdgeDistsArr
+        #The shape is (setsNum, variableNum, edgeLm.shape[0])
+        for i in range(variableNum):
+            marginDistsArray = np.zeros(shape = (setsNum, edgeLm.shape[0]))
+            for j in range(setsNum):
+                marginDistsArray[j, :] = allEdgeDistsArr[j, i, :]
+
+                marginPlotTilte = "plate_margin_" + str(i+1) + "_dists_to_orbit"
+                xLabel = "Points"
+                logic.matplotlibScatterPlot(marginDistsArray, dirList, marginPlotTilte, xLabel, projectLMOutputRoot)
+            # print("marginDistsArray:")
+            # print(marginDistsArray)                
         return
 
     # def initializeParameterNode(self) -> None:
@@ -1286,7 +1399,10 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         imageFileName = "plate_dists.png"
         imageFilePath = os.path.join(outputDir, imageFileName)
 
+        if os.path.exists(imageFilePath):
+            os.remove(imageFilePath)
         plt.savefig(imageFilePath, dpi=300)
+        plt.close()
         # pm = qt.QPixmap(imageFilePath)
         # imageWidget = qt.QLabel()
         # imageWidget.setPixmap(pm)
@@ -1295,8 +1411,224 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         csvFileName = "plate_heatmap_dists.csv"
         csvFilePath = os.path.join(outputDir, csvFileName)
         pandas.DataFrame(scalarArray).to_csv(csvFilePath, index=False)
-
         return
+
+    def makeScatterPlotWithFactors(
+        self, dataArray, factors, title, xAxisName, yAxisName, subjectID
+        ):
+        #Create a folder to store results
+        #Creat a folder to store results
+        plotFolderNode = slicer.mrmlScene.GetSubjectHierarchyNode()
+        sceneItemID = plotFolderNode.GetSceneItemID()
+        newFolder = plotFolderNode.CreateFolderItem(
+            sceneItemID, "compare_fitness_results"
+        )
+        #
+        # create two tables for the first two factors and then check for a third
+        # check if there is a table node has been created
+        # numPoints = len(data)
+        # uniqueFactors, factorCounts = np.unique(factors, return_counts=True)
+        factorNumber = len(factors)
+
+        # Set up chart
+        plotChartNode = slicer.mrmlScene.GetFirstNodeByName(
+            "Chart_scatterplot" + title + xAxisName + "v" + yAxisName
+        )
+        if plotChartNode is None:
+            plotChartNode = slicer.mrmlScene.AddNewNodeByClass(
+                "vtkMRMLPlotChartNode",
+                "Chart_scatterplot" + title + xAxisName + "v" + yAxisName,
+            )
+        else:
+            plotChartNode.RemoveAllPlotSeriesNodeIDs()
+
+        #Save plotChartNode in the folder
+        plotChartNodeItem = plotFolderNode.GetItemByDataNode(plotChartNode)
+        plotFolderNode.SetItemParent(plotChartNodeItem, newFolder)
+        #
+        # Plot all series
+        for i in range(dataArray.shape[0]):
+            factor = factors[i]
+            tableNode = slicer.mrmlScene.GetFirstNodeByName(
+                "Table for the scatterplot " + title + factor
+            )
+            if tableNode is None:
+                tableNode = slicer.mrmlScene.AddNewNodeByClass(
+                    "vtkMRMLTableNode", 
+                    "Table for the scatterplot " + title + factor
+                )
+            else:
+                tableNode.RemoveAllColumns()  # clear previous data from columns
+
+            #Save tableNode in the folder
+            tableNodeItem = plotFolderNode.GetItemByDataNode(tableNode)
+            plotFolderNode.SetItemParent(tableNodeItem, newFolder)
+
+            # Set up columns for X,Y, and labels
+            labels = tableNode.AddColumn()
+            labels.SetName("Subject ID")
+            tableNode.SetColumnType("Subject ID", vtk.VTK_STRING)
+
+            # axisNum = 2
+            # for i in range(axisNum):
+            #     pc = tableNode.AddColumn()
+            #     colName = "PC" + str(i + 1)
+            #     pc.SetName(colName)
+            #     tableNode.SetColumnType(colName, vtk.VTK_FLOAT)
+
+            xAxisCol = tableNode.AddColumn()
+            colName = xAxisName
+            xAxisCol.SetName(colName)
+            tableNode.SetColumnType(colName, vtk.VTK_INT)
+            # #
+            yAxisCol = tableNode.AddColumn()
+            colName = yAxisName
+            yAxisCol.SetName(colName)
+            tableNode.SetColumnType(colName, vtk.VTK_FLOAT)
+            #
+            #
+            # factorCounter = 0
+            table = tableNode.GetTable()
+            # table.SetNumberOfRows(factorCounts[factorIndex])
+            table.SetNumberOfRows(dataArray.shape[1])
+
+            #X = 1:len(dataArray.shape[1])
+            #Y = actual value of each row of the dataArray
+            # for i in range(numPoints):
+            #     if factors[i] == factor:
+            #         table.SetValue(factorCounter, 0, files[i])
+            #         for j in range(pcNumber):
+            #             table.SetValue(factorCounter, j + 1, data[i, j])
+            #         factorCounter += 1
+            for j in range(dataArray.shape[1]):
+                table.SetValue(j, 0, subjectID[i][j])
+                table.SetValue(j, 1, j+1)
+                table.SetValue(j, 2, dataArray[i, j])
+            
+
+            plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(factor)
+            if plotSeriesNode is None:
+                plotSeriesNode = slicer.mrmlScene.AddNewNodeByClass(
+                    "vtkMRMLPlotSeriesNode", factor
+                )
+                # GPANodeCollection.AddItem(plotSeriesNode)
+            # Create data series from table
+            plotSeriesNode.SetAndObserveTableNodeID(tableNode.GetID())
+            plotSeriesNode.SetXColumnName(xAxisName)
+            plotSeriesNode.SetYColumnName(yAxisName)
+            plotSeriesNode.SetLabelColumnName("Subject ID")
+            plotSeriesNode.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+            plotSeriesNode.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
+            plotSeriesNode.SetMarkerStyle(
+                slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare
+            )
+            plotSeriesNode.SetUniqueColor()
+            # Add data series to chart
+            plotChartNode.AddAndObservePlotSeriesNodeID(plotSeriesNode.GetID())
+
+            #Save plotSeriesNode in the folder
+            plotSeriesNodeItem = plotFolderNode.GetItemByDataNode(plotSeriesNode)
+            plotFolderNode.SetItemParent(plotSeriesNodeItem, newFolder)
+
+        # # Set up plotSeriesNode for templates
+        # tableNode = slicer.mrmlScene.GetFirstNodeByName(
+        #     "PCA Scatter Plot Table Templates with group input"
+        # )
+        # if tableNode is None:
+        #     tableNode = slicer.mrmlScene.AddNewNodeByClass(
+        #         "vtkMRMLTableNode", "PCA Scatter Plot Table Templates with group input"
+        #     )
+        # else:
+        #     tableNode.RemoveAllColumns()  # clear previous data from columns
+        # 
+        # labels = tableNode.AddColumn()
+        # labels.SetName("Subject ID")
+        # tableNode.SetColumnType("Subject ID", vtk.VTK_STRING)
+        # 
+        # for i in range(pcNumber):
+        #     pc = tableNode.AddColumn()
+        #     colName = "PC" + str(i + 1)
+        #     pc.SetName(colName)
+        #     tableNode.SetColumnType(colName, vtk.VTK_FLOAT)
+        # 
+        # table = tableNode.GetTable()
+        # table.SetNumberOfRows(len(templatesIndices))
+        # for i in range(len(templatesIndices)):
+        #     tempIndex = templatesIndices[i]
+        #     table.SetValue(i, 0, files[tempIndex])
+        #     for j in range(pcNumber):
+        #         table.SetValue(i, j + 1, data[tempIndex, j])
+        # 
+        # plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(
+        #     "Templates_with_group_input"
+        # )
+        # if plotSeriesNode is None:
+        #     plotSeriesNode = slicer.mrmlScene.AddNewNodeByClass(
+        #         "vtkMRMLPlotSeriesNode", "Templates_with_group_input"
+        #     )
+        # plotSeriesNode.SetAndObserveTableNodeID(tableNode.GetID())
+        # plotSeriesNode.SetXColumnName(xAxis)
+        # plotSeriesNode.SetYColumnName(yAxis)
+        # plotSeriesNode.SetLabelColumnName("Subject ID")
+        # plotSeriesNode.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        # plotSeriesNode.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
+        # plotSeriesNode.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleDiamond)
+        # plotSeriesNode.SetUniqueColor()
+        # # Add data series to chart
+        # plotChartNode.AddAndObservePlotSeriesNodeID(plotSeriesNode.GetID())
+
+        # Set up view options for chart
+        plotChartNode.SetTitle(title)
+        plotChartNode.SetXAxisTitle(xAxisName)
+        plotChartNode.SetYAxisTitle(yAxisName)
+        
+        return plotChartNode
+
+
+    def matplotlibScatterPlot(self, dataArray, groups, title, xLabel, exportDir):
+        try:
+          import matplotlib
+        except ModuleNotFoundError:
+          slicer.util.pip_install("matplotlib")
+        import matplotlib.pyplot as plt
+        matplotlib.use("Agg")
+          # from pylab import *
+        import numpy as np
+        import os
+        import pandas    
+        
+        # Get the number of groups
+        groupNum = dataArray.shape[0]
+        # Use a colormap (e.g., viridis) to generate n_groups distinct colors
+        cmap = plt.cm.get_cmap('viridis', groupNum)
+        
+        # Plot each group with a unique color from the colormap
+        # for idx, (group_name, (x, y)) in enumerate(groups.items()):
+        #     plt.scatter(x, y, label=group_name, color=cmap(idx))
+        plt.figure(figsize=(10, 5))
+        x_values = np.arange(1, dataArray.shape[1]+1)
+        for i in range(groupNum):
+            plt.scatter(x_values, dataArray[i, ], label = groups[i], color = cmap(i)) 
+        
+        # Add title, axis labels, and legend
+        plotTitle = "distances_plot_" + title
+        plt.title(plotTitle)
+        plt.xlabel(xLabel)
+        plt.ylabel("Distances")
+        plt.legend()
+        
+        imageFileName = title + ".png"
+        imageFilePath = os.path.join(exportDir, imageFileName)
+
+        if os.path.exists(imageFilePath):
+            os.remove(imageFilePath)
+        plt.savefig(imageFilePath, dpi=300)
+        plt.close()
+        
+        csvFileName = title + ".csv"
+        csvFilePath = os.path.join(exportDir, csvFileName)
+        pandas.DataFrame(dataArray).to_csv(csvFilePath, index=False)
+
 
 
     def projectPoints(self, sourceLMNode, sourceModel, targetModel):
