@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>588</width>
-    <height>813</height>
+    <width>580</width>
+    <height>777</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -605,7 +605,7 @@
             <string>Compare fitness</string>
            </property>
           </widget>
-          <widget class="QPlainTextEdit" name="fitnessEvaluationInfo">
+          <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
            <property name="geometry">
             <rect>
              <x>10</x>
