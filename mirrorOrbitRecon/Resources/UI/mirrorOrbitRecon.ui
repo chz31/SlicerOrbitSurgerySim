@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>mirrorOrbitRecon</class>
+ <widget class="qMRMLWidget" name="mirrorOrbitRecon">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>629</width>
+    <height>886</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
+     <property name="text">
+      <string>Inputs</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Input model:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="qMRMLNodeComboBox" name="originalModelSelector">
+        <property name="nodeTypes">
+         <stringlist notr="true">
+          <string>vtkMRMLModelNode</string>
+         </stringlist>
+        </property>
+        <property name="hideChildNodeTypes">
+         <stringlist notr="true"/>
+        </property>
+        <property name="noneEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="renameEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="interactionNodeSingletonTag">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Plane Landmarks:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="qMRMLNodeComboBox" name="planeLmSelector">
+        <property name="nodeTypes">
+         <stringlist notr="true">
+          <string>vtkMRMLMarkupsFiducialNode</string>
+         </stringlist>
+        </property>
+        <property name="hideChildNodeTypes">
+         <stringlist notr="true"/>
+        </property>
+        <property name="noneEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="editEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="renameEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="interactionNodeSingletonTag">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Mirrored model:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="qMRMLNodeComboBox" name="mirroredModelSelector">
+        <property name="nodeTypes">
+         <stringlist notr="true">
+          <string>vtkMRMLModelNode</string>
+         </stringlist>
+        </property>
+        <property name="hideChildNodeTypes">
+         <stringlist notr="true"/>
+        </property>
+        <property name="noneEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="renameEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="interactionNodeSingletonTag">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="createPlaneButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Create plane</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QCheckBox" name="planeAdjustCheckBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Enable interaction handle for adjusting plane position</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="outputsCollapsibleButton">
+     <property name="text">
+      <string>Mirrored skull model registration</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_4">
+      <item row="0" column="0" colspan="2">
+       <widget class="QPushButton" name="createMirrorPushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Create Mirrored Model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="skullRigidRegistrationPushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Rigid Registration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="skullAffineRegistrationPushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Deformable Registration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="showAffineModelCheckbox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Show deformable registered model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="showRigidModelCheckbox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Show rigidly registered model</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="advancedCollapsibleButton">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>Mirrored half skull model registration for potential improvement</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_3">
+      <item row="4" column="0">
+       <widget class="QRadioButton" name="leftSideRadioButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Left side</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QRadioButton" name="rightSideRadioButton">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="text">
+         <string>Right side</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="2">
+       <widget class="QPushButton" name="rigidMIrroredHalfButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Rigid Registration of mirrored half model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QPushButton" name="affineMirroredHalfButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Affine Registration of mirrored half model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QCheckBox" name="showRigidHalfModelCheckBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Show rigidly registered half model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QCheckBox" name="showAffineHalfModelCheckbox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Show deformable registered model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QPushButton" name="planeCutPushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Plane cut</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="QPushButton" name="keepOneSidePushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Keep mirrored half</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Which side to keep?</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="resetPushButton">
+     <property name="text">
+      <string>Reset</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ctkCollapsibleButton</class>
+   <extends>QWidget</extends>
+   <header>ctkCollapsibleButton.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLNodeComboBox</class>
+   <extends>QWidget</extends>
+   <header>qMRMLNodeComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLWidget</class>
+   <extends>QWidget</extends>
+   <header>qMRMLWidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

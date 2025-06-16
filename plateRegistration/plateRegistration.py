@@ -101,34 +101,6 @@ Will update soon
 #     )
 
 
-#
-# plateRegistrationParameterNode
-#
-
-
-# @parameterNodeWrapper
-# class plateRegistrationParameterNode:
-#     """
-#     The parameters needed by module.
-# 
-#     inputVolume - The volume to threshold.
-#     imageThreshold - The value at which to threshold the input volume.
-#     invertThreshold - If true, will invert the threshold.
-#     thresholdedVolume - The output volume that will contain the thresholded volume.
-#     invertedVolume - The output volume that will contain the inverted thresholded volume.
-#     """
-# 
-#     inputVolume: vtkMRMLScalarVolumeNode
-#     imageThreshold: Annotated[float, WithinRange(-100, 500)] = 100
-#     invertThreshold: bool = False
-#     thresholdedVolume: vtkMRMLScalarVolumeNode
-#     invertedVolume: vtkMRMLScalarVolumeNode
-# 
-# 
-# #
-# # plateRegistrationWidget
-#
-
 
 class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
