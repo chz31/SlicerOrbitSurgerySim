@@ -128,14 +128,28 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Rigid registration
         self.ui.skullRigidRegistrationPushButton.connect("clicked(bool)", self.onSkullRigidRegistrationPushButton)
-        self.ui.showRigidModelCheckbox.connect("clicked(bool)", self.onShowRigidModelCheckbox)
+        self.ui.showRigidModelCheckbox.connect("toggled(bool)", self.onShowRigidModelCheckbox)
 
-        # Affine registration"toggled(bool)"
+        # Affine registration"
         self.ui.skullAffineRegistrationPushButton.connect("clicked(bool)", self.onSkullAffineRegistrationPushButton)
         self.ui.showAffineModelCheckbox.connect("toggled(bool)", self.onShowAffineModelCheckbox)
 
         # Perform a plane cut
         self.ui.planeCutPushButton.connect("clicked(bool)", self.onPlaneCutPushButton)
+
+        # Select which side to keep
+        self.ui.keepHalfPushButton.connect("clicked(bool)", self.onKeepHalfPushButton)
+
+        # Rigid registration of a half model
+        self.ui.rigidMirroredHalfButton.connect("clicked(bool)", self.onRigidMirroredHalfButton)
+        self.ui.showRigidHalfModelCheckBox.connect("toggled(bool)", self.onShowRigidHalfModelCheckBox)
+
+        # Affine registration of a half model
+        self.ui.affineMirroredHalfButton.connect("clicked(bool)", self.onAffineMirroredHalfButton)
+        self.ui.showAffineHalfModelCheckbox.connect("toggled(bool)", self.onShowAffineHalfModelCheckbox)
+
+        # Reset
+        self.ui.resetPushButton.connect("clicked(bool)", self.onResetPushButton)
 
         # These connections ensure that we update parameter node when scene is closed
         self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
@@ -192,7 +206,9 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.modules.dynamicmodeler.logic().RunDynamicModelerTool(dynamicModelerNode)
         # self.mirroredSkullModelNode.SetName(self.originalSkullModelNode.GetName() + "_mirror")
         # self.ui.createMirrorPushButton.enabled=False
+        self.mirroredSkullModelNode.GetDisplayNode().SetVisibility(True)
         self.ui.skullRigidRegistrationPushButton.enabled = True
+        self.ui.resetPushButton.enabled = True
 
     def onSkullRigidRegistrationPushButton(self):
         #rigid registration
@@ -227,6 +243,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.showRigidModelCheckbox.checked = 1
         self.ui.skullAffineRegistrationPushButton.enabled = True
         self.ui.planeCutPushButton.enabled = True
+
 
     def onSkullAffineRegistrationPushButton(self):
         #Clone the rigid registered model again for affine
@@ -280,17 +297,138 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onPlaneCutPushButton(self):
         planeCutFunction = slicer.vtkSlicerDynamicModelerPlaneCutTool()
         dynamicModelerNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLDynamicModelerNode")
-        dynamicModelerNode.SetToolName("Plane Cut")
+        dynamicModelerNode.SetToolName("Plane cut")
         dynamicModelerNode.SetNodeReferenceID("PlaneCut.InputModel", self.mirroredSkullRigidNode.GetID())
         dynamicModelerNode.SetNodeReferenceID("PlaneCut.InputPlane", self.mirrorPlaneNode.GetID())
-        self.positiveHalfModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "positive_half_skull")
-        self.negativeHalfModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "negative_half_skull")
-        dynamicModelerNode.SetNodeReferenceID("ROICut.OutputPositiveModel", self.self.positiveHalfModelNode.GetID())
-        dynamicModelerNode.SetNodeReferenceID("ROICut.OutputNegativeModel", self.self.negativeHalfModelNode.GetID())
+        self.positiveHalfModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "positive_half_mirror")
+        self.negativeHalfModelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "negative_half_mirror")
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputPositiveModel", self.positiveHalfModelNode.GetID())
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputNegativeModel", self.negativeHalfModelNode.GetID())
         slicer.modules.dynamicmodeler.logic().RunDynamicModelerTool(dynamicModelerNode)
+        self.positiveHalfModelNode.GetDisplayNode().SetColor([125, 0, 0])
+        self.negativeHalfModelNode.GetDisplayNode().SetColor([0, 0, 125])
+        #
+        #Also cut the skull model in half
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.InputModel", self.originalSkullModelNode.GetID())
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.InputPlane", self.mirrorPlaneNode.GetID())
+        self.positiveHalfOriginalModel = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "positive_half_original")
+        self.negativeHalfOriginalModel = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "negative_half_original")
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputPositiveModel", self.positiveHalfOriginalModel.GetID())
+        dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputNegativeModel", self.negativeHalfOriginalModel.GetID())
+        slicer.modules.dynamicmodeler.logic().RunDynamicModelerTool(dynamicModelerNode)
+        # self.positiveHalfOriginalModel.CreateDefaultDisplayNodes()
+        self.positiveHalfOriginalModel.GetDisplayNode().SetVisibility(False)
+        # self.negativeHalfOriginalModel.CreateDefaultDisplayNodes()
+        self.negativeHalfOriginalModel.GetDisplayNode().SetVisibility(False)
+        #
+        self.ui.showRigidModelCheckbox.checked = 0
+        self.ui.showAffineModelCheckbox.checked = 0
+        self.ui.planeCutPushButton.enabled = False
+        self.ui.keepHalfPushButton.enabled = True
 
 
+    def onKeepHalfPushButton(self):
+        if self.ui.leftSideRadioButton.checked == 1:
+            self.negativeHalfModelNode.GetDisplayNode().SetVisibility(False)
+            self.positiveHalfModelNode.GetDisplayNode().SetVisibility(True)
+            self.halfModelRigidNode = self.positiveHalfModelNode
+            self.halfOriginalNode = self.positiveHalfOriginalModel
+        else:
+            self.negativeHalfModelNode.GetDisplayNode().SetVisibility(True)
+            self.positiveHalfModelNode.GetDisplayNode().SetVisibility(False)
+            self.halfModelRigidNode = self.negativeHalfModelNode
+            self.halfOriginalNode = self.negativeHalfOriginalModel
+        self.ui.rigidMirroredHalfButton.enabled = True
 
+
+    def onRigidMirroredHalfButton(self):
+        #Perfrom itk rigid registration
+        self.halfModelRigidNode.SetName(self.mirroredSkullModelNode.GetName() + "_half_rigid")
+        logic = mirrorOrbitReconLogic()
+        self.sourcePointsHalf, self.targetPointsHalf, halfScalingTransformNode, halfICPTransformNode = logic.ITKRegistration(self.halfModelRigidNode,
+                                                                                                   self.halfOriginalNode,
+                                                                                                   scalingOption=False,
+                                                                                                   parameterDictionary=self.parameterDictionary,
+                                                                                                   usePoisson=False)
+        self.mirrorPlaneNode.GetDisplayNode().SetVisibility(False)
+        self.ui.rigidMirroredHalfButton.enabled = False
+        self.ui.showRigidHalfModelCheckBox.enabled = True
+        self.ui.showRigidHalfModelCheckBox.checked= 1
+        self.ui.affineMirroredHalfButton.enabled = True
+
+
+    def onShowRigidHalfModelCheckBox(self):
+        try:
+            if self.ui.showRigidHalfModelCheckBox.isChecked():
+                self.halfModelRigidNode.GetDisplayNode().SetVisibility(True)
+            else:
+                self.halfModelRigidNode.GetDisplayNode().SetVisibility(False)
+        except:
+            pass
+
+
+    def onAffineMirroredHalfButton(self):
+        #Clone the rigid registered model again for affine
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        itemIDToClone = shNode.GetItemByDataNode(self.halfModelRigidNode)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        self.halfModelaffineNode = shNode.GetItemDataNode(clonedItemID)
+        self.halfModelaffineNode.SetName(self.mirroredSkullModelNode.GetName() + "_half_affine")
+        self.halfModelaffineNode.GetDisplayNode().SetColor([0, 0, 255]) #blue
+        #Affine deformable registration
+        logic = mirrorOrbitReconLogic()
+        transformation, translation = logic.CPDAffineTransform(self.halfModelaffineNode, self.sourcePoints, self.targetPoints)
+        matrix_vtk = vtk.vtkMatrix4x4()
+        for i in range(3):
+            for j in range(3):
+                matrix_vtk.SetElement(i, j, transformation[j][i])
+        for i in range(3):
+            matrix_vtk.SetElement(i, 3, translation[i])
+        affineTransform = vtk.vtkTransform()
+        affineTransform.SetMatrix(matrix_vtk)
+        affineTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "Affine_transform_matrix")
+        affineTransformNode.SetAndObserveTransformToParent(affineTransform)
+        affineNodeName = self.mirroredSkullModelNode.GetName() + "half_affine"
+        affineTransformNode.SetName(affineNodeName)
+
+        self.ui.affineMirroredHalfButton.enabled = False
+        self.ui.showRigidHalfModelCheckBox.checked = 0
+        self.ui.showAffineHalfModelCheckbox.enabled = True
+        self.ui.showAffineHalfModelCheckbox.checked = 1
+
+    def onShowAffineHalfModelCheckbox(self):
+        try:
+            if self.ui.showAffineHalfModelCheckbox.isChecked():
+                self.halfModelaffineNode.GetDisplayNode().SetVisibility(True)
+            else:
+                self.halfModelaffineNode.GetDisplayNode().SetVisibility(False)
+        except:
+            pass
+
+    def onResetPushButton(self):
+        self.ui.originalModelSelector.setCurrentNode(None)
+        self.ui.planeLmSelector.setCurrentNode(None)
+        self.ui.mirroredModelSelector.setCurrentNode(None)
+        self.ui.createPlaneButton.enabled = False
+        self.ui.planeAdjustCheckBox.checked = 0
+        self.ui.planeAdjustCheckBox.enabled = False
+        self.ui.createMirrorPushButton.enabled = False
+        self.ui.skullRigidRegistrationPushButton.enabled = False
+        self.ui.showRigidModelCheckbox.checked = 0
+        self.ui.showRigidModelCheckbox.enabled = False
+        self.ui.skullAffineRegistrationPushButton.enabled = 0
+        self.ui.showAffineModelCheckbox.checked = 0
+        self.ui.showAffineModelCheckbox.enabled = False
+        self.ui.planeCutPushButton.enabled = False
+        self.ui.keepHalfPushButton.enabled = False
+        self.halfModelRigidNode.GetDisplayNode.SetVisibility(False)
+        self.ui.rigidMirroredHalfButton.enabled=False
+        self.ui.showRigidHalfModelCheckBox.checked = 0
+        self.ui.showRigidHalfModelCheckBox.enabled = False
+        self.ui.affineMirroredHalfButton.enabled = False
+        self.ui.showAffineHalfModelCheckbox.checked = 0
+        self.ui.showAffineHalfModelCheckbox.enabled = False
+        self.ui.resetPushButton.enabled = 0
 
     def exit(self) -> None:
         """Called each time the user opens a different module."""
