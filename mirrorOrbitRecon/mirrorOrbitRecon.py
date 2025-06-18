@@ -252,7 +252,8 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
         self.mirroredSkullAffineNode = shNode.GetItemDataNode(clonedItemID)
         self.mirroredSkullAffineNode.SetName(self.mirroredSkullModelNode.GetName() + "_affine")
-        self.mirroredSkullAffineNode.GetDisplayNode().SetColor([0, 0, 255]) #blue
+        self.mirroredSkullAffineNode.GetDisplayNode().SetColor(0, 1, 0) #blue
+        # self.mirroredSkullAffineNode.GetDisplayNode().SetShading(True)
         #Affine deformable registration
         logic = mirrorOrbitReconLogic()
         transformation, translation = logic.CPDAffineTransform(self.mirroredSkullAffineNode, self.sourcePoints, self.targetPoints)
@@ -305,8 +306,12 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputPositiveModel", self.positiveHalfModelNode.GetID())
         dynamicModelerNode.SetNodeReferenceID("PlaneCut.OutputNegativeModel", self.negativeHalfModelNode.GetID())
         slicer.modules.dynamicmodeler.logic().RunDynamicModelerTool(dynamicModelerNode)
-        self.positiveHalfModelNode.GetDisplayNode().SetColor([125, 0, 0])
-        self.negativeHalfModelNode.GetDisplayNode().SetColor([0, 0, 125])
+        self.positiveHalfModelNode.GetDisplayNode().SetVisibility(True)
+        self.positiveHalfModelNode.GetDisplayNode().SetColor(0.5, 0, 0)
+        # self.positiveHalfModelNode.GetDisplayNode().SetShading(True)
+        self.negativeHalfModelNode.GetDisplayNode().SetVisibility(True)
+        self.negativeHalfModelNode.GetDisplayNode().SetColor(0, 0, 0.5)
+        # self.negativeHalfModelNode.GetDisplayNode().SetShading(True)
         #
         #Also cut the skull model in half
         dynamicModelerNode.SetNodeReferenceID("PlaneCut.InputModel", self.originalSkullModelNode.GetID())
@@ -350,6 +355,8 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                                                                    scalingOption=False,
                                                                                                    parameterDictionary=self.parameterDictionary,
                                                                                                    usePoisson=False)
+        self.halfModelRigidNode.GetDisplayNode().SetColor(1, 0.67, 0)
+        # self.halfModelRigidNode.GetDisplayNode.SetShading(True)
         self.mirrorPlaneNode.GetDisplayNode().SetVisibility(False)
         self.ui.rigidMirroredHalfButton.enabled = False
         self.ui.showRigidHalfModelCheckBox.enabled = True
@@ -374,7 +381,8 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
         self.halfModelaffineNode = shNode.GetItemDataNode(clonedItemID)
         self.halfModelaffineNode.SetName(self.mirroredSkullModelNode.GetName() + "_half_affine")
-        self.halfModelaffineNode.GetDisplayNode().SetColor([0, 0, 255]) #blue
+        self.halfModelaffineNode.GetDisplayNode().SetColor(0, 0, 1) #blue
+        # self.halfModelaffineNode.GetDisplayNode().SetShading(True)
         #Affine deformable registration
         logic = mirrorOrbitReconLogic()
         transformation, translation = logic.CPDAffineTransform(self.halfModelaffineNode, self.sourcePoints, self.targetPoints)
@@ -421,7 +429,10 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.showAffineModelCheckbox.enabled = False
         self.ui.planeCutPushButton.enabled = False
         self.ui.keepHalfPushButton.enabled = False
-        self.halfModelRigidNode.GetDisplayNode.SetVisibility(False)
+        try:
+            self.halfModelRigidNode.GetDisplayNode.SetVisibility(False)
+        except:
+            pass
         self.ui.rigidMirroredHalfButton.enabled=False
         self.ui.showRigidHalfModelCheckBox.checked = 0
         self.ui.showRigidHalfModelCheckBox.enabled = False
@@ -528,7 +539,8 @@ class mirrorOrbitReconLogic(ScriptedLoadableModuleLogic):
         slicer.vtkSlicerTransformLogic().hardenTransform(sourceModelNode)
         sourceModelNode.GetDisplayNode().SetVisibility(True)
         red = [1, 0, 0]
-        sourceModelNode.GetDisplayNode().SetColor(red)
+        sourceModelNode.GetDisplayNode().SetColor(1, 0, 0)
+        # sourceModelNode.GetDisplayNode().SetShading(True)
         targetModelNode.GetDisplayNode().SetVisibility(True)
 
         sourcePoints = logic.transform_numpy_points(sourcePoints, ICPTransform_similarity)
