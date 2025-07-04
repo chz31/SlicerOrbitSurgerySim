@@ -252,16 +252,6 @@
             </property>
            </widget>
           </item>
-          <item row="14" column="0">
-           <widget class="QPlainTextEdit" name="collisionInfoBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
           <item row="13" column="0">
            <widget class="QPushButton" name="finalizePlateRegistrationPushButton">
             <property name="enabled">
@@ -340,6 +330,16 @@
             </property>
             <property name="text">
              <string>Reset</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="0">
+           <widget class="QPlainTextEdit" name="collisionInfoBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
            </widget>
           </item>

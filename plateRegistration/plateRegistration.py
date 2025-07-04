@@ -136,8 +136,7 @@ class plateRegistrationParameterNode:
     allTransformNode: vtkMRMLTransformNode
     ioRootDir: str
     reconstructOrbitModel: vtkMRMLModelNode
-    registeredPlateFetcher: tuple[str, vtkMRMLModelNode, vtkMRMLTransformNode]
-    registeredPlateFetcherList: list
+    registeredPlateInfoDict: dict[str, tuple[vtkMRMLModelNode, vtkMRMLTransformNode]]
 
 
 
@@ -403,7 +402,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.orbitLm.GetDisplayNode().SetVisibility(True)
         self._parameterNode.orbitLm.SetNthControlPointVisibility(0, False)
         self._parameterNode.orbitLm.SetNthControlPointVisibility(2, False)
-        self._parameterNode.registeredPlateLm.GetDisplayNode.GetDisplayNode().SetVisibility(False)
+        self._parameterNode.registeredPlateLm.GetDisplayNode().SetVisibility(False)
         if self.ui.interactionTransformCheckbox.isChecked():
             self.ui.interactionTransformCheckbox.enabled = False
             self.interactionTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interaction_transform")
@@ -420,10 +419,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.realignHandleToPStopButton.enabled = True
             self.ui.resetToLastStepButton.enabled = True
             self.ui.createIntersectButton.enabled = True
-            self.ui.instantHeatMapPushButton = True
-            self.ui.resetAllPushButtonButton.enabled = True
+            self.ui.instantHeatMapPushButton.enabled = True
+            self.ui.resetAllPushButton.enabled = True
             self.ui.instantCollisionDetectionCheckBox.enabled = True
-            self.ui.instantHeatmapCheckBox.enabled = True
+            self.ui.instantIntersectionMarkerCheckBox.enabled = True
             self.ui.finalizePlateRegistrationPushButton.enabled = True
     
             #remesh plate model to 10k points
@@ -500,7 +499,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                   f":: No collision detected. \n"
                 )
             else:
-                self.ui.collisionInfoBox.insertPlainText(f"{numberOfCollisions} collision points detected. This is approximately {numberOfCollisions/10000}% of points in the plate. \n")
+                self.ui.collisionInfoBox.insertPlainText(f"{numberOfCollisions} collision points detected. This is approximately {numberOfCollisions/100} % of all points in the plate. \n")
                 print(f"{numberOfCollisions} collision points detected. This is approximately {numberOfCollisions/10000}% of points in the plate.")
         
         elif self.ui.instantIntersectionMarkerCheckBox.isChecked():
@@ -628,7 +627,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
         plateRemeshNode_clone = shNode.GetItemDataNode(clonedItemID)
 
-        # Add to interaction trasnform and harden it
+        # Add to interaction transform and harden it
         plateRemeshNode_clone.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(plateRemeshNode_clone)
         #
@@ -637,7 +636,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.collisionInfoBox.clear
         if collisionFlag == True:
             self.ui.collisionInfoBox.insertPlainText(
-                f":: Collision between model and plate detected. There are {numberOfCollisions} collision points. This is approximately {numberOfCollisions/10000}% of points in the plate. \n"
+                f":: Collision between model and plate detected. There are {numberOfCollisions} collision points. This is approximately {numberOfCollisions/100} % of points in the plate. \n"
             )
             intersector = logic.intersection_marker(plateRemeshNode_clone, self._parameterNode.fractureOrbitModel)
             self.intersectionModel = slicer.modules.models.logic().AddModel(intersector.GetOutputDataObject(0))
@@ -774,6 +773,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         allTransformNodeItem = self.folderNode.GetItemByDataNode(self._parameterNode.allTransformNode)
         self.folderNode.SetItemParent(allTransformNodeItem, self.newFolder)
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionTransform)
+        #
+        # registeredPlateInfoDict: dict[str, tuple[vtkMRMLModelNode, vtkMRMLTransformNode]]
+        print(self.folderNode.GetName())
+        self._parameterNode.registeredPlateInfoDict[self.folderNode.GetName()] = (self._parameterNode.interactionPlateModel, self._parameterNode.allTransformNode)
         #
         self.ui.inputOrbitModelSelector.setCurrentNode(None)
         self.ui.orbitFiducialSelector.setCurrentNode(None)
@@ -1136,23 +1139,21 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
     
     def collision_detection(self, modelNode1, modelNode2):
         # Variables
-        #collisionDetection = vtkSRCP.vtkCollisionDetectionFilter()
         collisionDetection = vtk.vtkCollisionDetectionFilter()
         numberOfCollisions = 0
         collisionFlag = False
-
         # Collision Detection
         node1ToWorldTransformMatrix = vtk.vtkMatrix4x4()
         node2ToWorldTransformMatrix = vtk.vtkMatrix4x4()
-        node1ParentTransformNode = orbit_node.GetParentTransformNode()
-        node2ParentTransformNode = plate_node.GetParentTransformNode()
+        node1ParentTransformNode = modelNode1.GetParentTransformNode()
+        node2ParentTransformNode = modelNode2.GetParentTransformNode()
         if node1ParentTransformNode != None:
             node1ParentTransformNode.GetMatrixTransformToWorld(node1ToWorldTransformMatrix)
         if node2ParentTransformNode != None:
             node2ParentTransformNode.GetMatrixTransformToWorld(node2ToWorldTransformMatrix)
         #
-        collisionDetection.SetInputData( 0, plate_node.GetPolyData() )
-        collisionDetection.SetInputData( 1, orbit_node.GetPolyData() )
+        collisionDetection.SetInputData( 0, modelNode1.GetPolyData() )
+        collisionDetection.SetInputData( 1, modelNode2.GetPolyData() )
         collisionDetection.SetMatrix( 0, node1ToWorldTransformMatrix )
         collisionDetection.SetMatrix( 1, node2ToWorldTransformMatrix )
         collisionDetection.SetBoxTolerance( 0.0 )
