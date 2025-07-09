@@ -139,7 +139,7 @@ class plateRegistrationParameterNode:
     plateRegFolderName: str
     ioRootDir: str
     repairedOrbitModel: vtkMRMLModelNode
-    registeredPlateInforJSON: str
+    registeredPlateInfoJSON: str
     # registeredPlateInfoDict: dict[str, tuple[vtkMRMLModelNode, vtkMRMLTransformNode]]
 
 
@@ -234,6 +234,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         self.ui.currentRegResultsPathLineEdit.connect("currentPathChanged(QString)", self.onCurrentRegResultsPathLineEdit)
         self.ui.saveCurrentRegPushButton.connect('clicked(bool)', self.onSaveCurrentRegPushButton)
+        self.ui.saveAllRegPathLineEdit.connect("currentPathChanged(QString)", self.onSaveAllRegPathLineEdit)
+        self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
 
         #Plate fit tab connections
         self.ui.plateModelSelector2.setMRMLScene(slicer.mrmlScene)
@@ -384,6 +386,14 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.saveCurrentRegPushButton.enabled = True
         else:
             self.ui.saveCurrentRegPushButton.enabled = False
+        # self.ui.saveCurrentRegPushButton.enabled = bool(self.ui.currentRegResultsPathLineEdit.currentPath)
+
+    def onSaveAllRegPathLineEdit(self):
+        # self.ui.bool.saveAllRegPushButton.enabled = bool(self.ui.saveAllRegPathLineEdit.currentPath)
+        if self.ui.saveAllRegPathLineEdit.currentPath:
+            self.ui.saveAllRegPushButton.enabled = True
+        else:
+            self.ui.saveAllRegPushButton.enabled = False
 
 
     def onPlaceOrbitLmPushButton(self):
@@ -925,31 +935,37 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionTransformRecorder)
         else:
             pass
-        #
+        # #
         print(f"Registration data stored in the folder {self._parameterNode.plateRegFolderName}.")
+
+        logic = plateRegistrationLogic()
+        logic.writeParameterDict(interactionFlag, self.plateRegistrationFolder) #store current registration data in a directionary for reusing
+
+        # currentPlateFolderName = self._parameterNode.plateRegFolderName
+        # #
+        # try:
+        #     registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        # except (AttributeError, ValueError, TypeError):
+        #     registeredPlateInfoDict = {}
+        # #
         #
-        try:
-            registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
-        except (AttributeError, ValueError, TypeError):
-            registeredPlateInfoDict = {}
-        #
-        if interactionFlag == 1:
-            registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
-                "finalPlateModelNodeID": self._parameterNode.interactionPlateModel.GetID(),
-                "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
-                "folderItemID": self._parameterNode.plateRegFolderName
-            }
-        else:
-            registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
-                "finalPlateModelNodeID": self._parameterNode.rigidRegisteredPlateModel.GetID(),
-                "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
-                "folderItemID": self._parameterNode.plateRegFolderName
-            }
-        self._parameterNode.registeredPlateInfoJSON = json.dumps(registeredPlateInfoDict) #flatten into JSON
-        #
-        dict_keys = registeredPlateInfoDict.keys()
-        print(f"registered plate keys are {dict_keys}")
-        #
+        # if interactionFlag == 1:
+        #     registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
+        #         "finalPlateModelNodeID": self._parameterNode.interactionPlateModel.GetID(),
+        #         "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
+        #         "folderItemID": self.plateRegistrationFolder
+        #     }
+        # else:
+        #     registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
+        #         "finalPlateModelNodeID": self._parameterNode.rigidRegisteredPlateModel.GetID(),
+        #         "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
+        #         "folderItemID": self.plateRegistrationFolder
+        #     }
+        # self._parameterNode.registeredPlateInfoJSON = json.dumps(registeredPlateInfoDict) #flatten into JSON
+        # #
+        # dict_keys = registeredPlateInfoDict.keys()
+        # print(f"registered plate keys are {dict_keys}")
+
         self.ui.interactionTransformCheckbox.checked=0
         self.ui.interactionTransformCheckbox.enabled=False
         self.ui.instantCollisionDetectionCheckBox.checked=0
@@ -963,6 +979,11 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.resetAllPushButton.enabled=False
         self.ui.finalizePlateRegistrationPushButton.enabled = False
         self.ui.currentRegResultsPathLineEdit.enabled = True
+        self.ui.saveAllRegPathLineEdit.enabled = True
+        if self.ui.saveAllRegPathLineEdit.currentPath:
+            self.ui.saveAllRegPushButton.enabled = True
+        else:
+            pass
         #
         #
         self.ui.inputOrbitModelSelector.enabled = True
@@ -1001,7 +1022,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.rigidRegisteredPlateModel.GetDisplayNode().SetVisibility(True)
 
     def onSaveCurrentRegPushButton(self):
-        import os
         logic = plateRegistrationLogic()
         resultsFolderName = self._parameterNode.plateRegFolderName
         outputPath = self.ui.currentRegResultsPathLineEdit.currentPath
@@ -1009,8 +1029,45 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         slicer.app.ioManager().addDefaultStorageNodes()
         logic.exportCurrentFolder(self.plateRegistrationFolder, outputFolder)
         self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
-        self.onCurrentRegResultsPathLineEdit()
+        self.onCurrentRegResultsPathLineEdit() #disable save button
         self.ui.currentRegResultsPathLineEdit.enabled = False
+        logFileName = self._parameterNode.plateRegFolderName + ".log"
+        logFilePath = os.path.join(outputFolder, logFileName)
+        with open(logFilePath, "w") as f:
+            f.write("final registered plate file name: " + self._parameterNode.interactionPlateModel.GetName() + ".ply" + "\n")
+            f.write("final regietered plate MRML node ID: " + self._parameterNode.interactionPlateModel.GetID() + "\n")
+            f.write("full transoform node file name: " + self._parameterNode.allTransformNode.GetName() + ".h5" + "\n")
+            f.write("full transform node MRML node ID: " + self._parameterNode.allTransformNode.GetID() + "\n")
+
+    def onSaveAllRegPushButton(self):
+        logic = plateRegistrationLogic()
+        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        dict_keys = registeredPlateInfoDict.keys()
+        print(f"existing folders are {dict_keys}")
+        allOutDir = self.ui.saveAllRegPathLineEdit.currentPath
+        # allOutFolder = 'plate_registration' + datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+        # allOutDir = os.path.join(rootDir, allOutFolder)
+        for key in dict_keys:
+            currentFolderName = key
+            outputDir = os.path.join(allOutDir, currentFolderName)
+            interactionPlateModelId = registeredPlateInfoDict[currentFolderName]["finalPlateModelNodeID"]
+            interactionPlateModelNode = slicer.mrmlScene.GetNodeByID(interactionPlateModelId)
+            fullTransformNodeID = registeredPlateInfoDict[currentFolderName]["fullTransformNodeID"]
+            fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
+            currentFoldeItemId = registeredPlateInfoDict[currentFolderName]["folderItemID"]
+            slicer.app.ioManager().addDefaultStorageNodes()
+            logic.exportCurrentFolder(currentFoldeItemId, outputDir)
+            logFileName = currentFolderName+ ".log"
+            logFilePath = os.path.join(outputDir, logFileName)
+            with open(logFilePath, "w") as f:
+                f.write(
+                    "final registered plate file name: " + interactionPlateModelNode.GetName() + ".ply" + "\n")
+                f.write(
+                    "final regietered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
+                f.write(
+                    "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
+                f.write("full transform node MRML node ID: " + fullTransformNode.GetID() + "\n")
+        self.ui.saveAllRegPushButton.enabled = False
 
 
     def onPlateHeatmap(self):
@@ -1433,6 +1490,47 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         probe = slicer.modules.probevolumewithmodel
         slicer.cli.run(probe, None, parameters, wait_for_completion=True)
         return
+
+
+    def writeParameterDict(self, interactionFlag, currentFolderItemId):
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        currentPlateFolderName = self.getParameterNode().plateRegFolderName
+        #
+        print(f"Registration data stored in the folder {self.getParameterNode().plateRegFolderName}.")
+        #
+        try:
+            registeredPlateInfoDict = json.loads(self.getParameterNode().registeredPlateInfoJSON)
+        except (AttributeError, ValueError, TypeError):
+            registeredPlateInfoDict = {}
+        #
+
+        if interactionFlag == 1:
+            registeredPlateInfoDict[self.getParameterNode().plateRegFolderName] = {
+                "finalPlateModelNodeID": self.getParameterNode().interactionPlateModel.GetID(),
+                "fullTransformNodeID": self.getParameterNode().allTransformNode.GetID(),
+                "folderItemID": currentFolderItemId
+            }
+        else:
+            registeredPlateInfoDict[self.getParameterNode().plateRegFolderName] = {
+                "finalPlateModelNodeID": self.getParameterNode().rigidRegisteredPlateModel.GetID(),
+                "fullTransformNodeID": self.getParameterNode().allTransformNode.GetID(),
+                "folderItemID": currentFolderItemId
+            }
+
+        keysToRemove = []
+        for key in registeredPlateInfoDict.keys():
+            folderItemId = registeredPlateInfoDict[key]["folderItemID"]
+            if not shNode.GetItemLevel(folderItemId):
+                keysToRemove.append(key)
+
+        for key in keysToRemove:
+            del registeredPlateInfoDict[key]
+
+        dict_keys = registeredPlateInfoDict.keys()
+        print(f"registered plate keys are {dict_keys}")
+        self.getParameterNode().registeredPlateInfoJSON = json.dumps(registeredPlateInfoDict)  # flatten into JSON
+        #
+
 
     def exportCurrentFolder(self, shFolderItemId, outputFolder):
         # Get items in the folder

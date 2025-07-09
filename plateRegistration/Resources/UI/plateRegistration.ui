@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1413</width>
+    <width>1400</width>
     <height>1540</height>
    </rect>
   </property>
@@ -398,6 +398,41 @@
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
+          <item row="3" column="0">
+           <widget class="QPushButton" name="createIntersectButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Switch the the Advanced Settings tab to change parameters and run/re-run ALPACA</string>
+            </property>
+            <property name="text">
+             <string>Mark intersection</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QPushButton" name="instantHeatMapPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Create Distance Heatmap</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="0">
            <widget class="QCheckBox" name="instantIntersectionMarkerCheckBox">
             <property name="enabled">
@@ -444,41 +479,6 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
-           <widget class="QPushButton" name="instantHeatMapPushButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Create Distance Heatmap</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QPushButton" name="createIntersectButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Switch the the Advanced Settings tab to change parameters and run/re-run ALPACA</string>
-            </property>
-            <property name="text">
-             <string>Mark intersection</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <widget class="QCheckBox" name="instantCollisionDetectionCheckBox">
             <property name="enabled">
@@ -505,26 +505,8 @@
             </property>
            </widget>
           </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="ctkCollapsibleButton" name="resetFinalizeCollapsibleButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Reset/Finalize/Save</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_7">
-          <item row="2" column="0">
-           <widget class="QPushButton" name="finalizePlateRegistrationPushButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
+          <item row="18" column="0">
+           <widget class="ctkCollapsibleButton" name="resetFinalizeCollapsibleButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
               <horstretch>0</horstretch>
@@ -532,60 +514,123 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Finalize Registration</string>
+             <string>Reset/Finalize/Save</string>
             </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_4">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Select dir for saving the current plate registration results: </string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="ctkPathLineEdit" name="currentRegResultsPathLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>Choose a directory to save the current plate registration results.</string>
-            </property>
-            <property name="label">
-             <string>Choose a directory</string>
-            </property>
-            <property name="filters">
-             <set>ctkPathLineEdit::Dirs</set>
-            </property>
-            <property name="options">
-             <set>ctkPathLineEdit::ShowDirsOnly</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QPushButton" name="resetAllPushButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Reset</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QPushButton" name="saveCurrentRegPushButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Save current plate registratio results</string>
-            </property>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Select dir for saving the current plate registration results: </string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Select dir for saving plate registration results for all the plates in the scene:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" colspan="2">
+              <widget class="QPushButton" name="resetAllPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Reset</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QPushButton" name="finalizePlateRegistrationPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Finalize Registration</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <widget class="QPushButton" name="saveCurrentRegPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Save current plate registratio results</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="0" colspan="2">
+              <widget class="QPushButton" name="saveAllRegPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Save All</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0" colspan="2">
+              <widget class="ctkPathLineEdit" name="currentRegResultsPathLineEdit">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>Choose a directory to save the current plate registration results.</string>
+               </property>
+               <property name="label">
+                <string>Choose a directory</string>
+               </property>
+               <property name="filters">
+                <set>ctkPathLineEdit::Dirs</set>
+               </property>
+               <property name="options">
+                <set>ctkPathLineEdit::ShowDirsOnly</set>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0" colspan="2">
+              <widget class="ctkPathLineEdit" name="saveAllRegPathLineEdit">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="filters">
+                <set>ctkPathLineEdit::Dirs</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
