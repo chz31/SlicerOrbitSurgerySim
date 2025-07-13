@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1400</width>
-    <height>1540</height>
+    <width>1289</width>
+    <height>1534</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -23,7 +23,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="plateRegistrationTab">
       <attribute name="title">
@@ -79,7 +79,7 @@
           <stringlist notr="true"/>
          </property>
          <attribute name="headerVisible">
-          <bool>true</bool>
+          <bool>false</bool>
          </attribute>
         </widget>
        </item>
@@ -644,15 +644,48 @@
       </attribute>
       <layout class="QVBoxLayout" name="advancedSettingsLayout">
        <item>
+        <widget class="qMRMLSubjectHierarchyTreeView" name="SubjectHierarchyTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="levelFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+          </stringlist>
+         </property>
+         <property name="hideChildNodeTypes">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="ctkCollapsibleButton" name="CollapsibleButton">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Input</string>
+          <string>Points projection from the scene</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -664,111 +697,49 @@
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Aligned plate model</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
-             <string>Repaired orbit model</string>
+             <string>Repaired orbit model: </string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="qMRMLNodeComboBox" name="plateModelSelector2">
+           <widget class="ctkPathLineEdit" name="platePtsBatchPathLineEdit">
             <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
              <bool>false</bool>
             </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
+            <property name="filters">
+             <set>ctkPathLineEdit::Dirs</set>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="qMRMLSubjectHierarchyComboBox" name="SubjectHierarchyComboBox">
-            <property name="includeItemAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="includeNodeAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="excludeItemAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="excludeNodeAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="qMRMLNodeComboBox" name="plateTransformSelector">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>160</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLTransformNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="qMRMLSubjectHierarchyTreeView" name="SubjectHierarchyTreeView">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_8">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="levelFilter">
-             <stringlist notr="true"/>
+            <property name="text">
+             <string>Plate margin points root directory:</string>
             </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="orbitReconShComboBox">
+            <property name="showCurrentItemParents">
+             <bool>false</bool>
             </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
+            <property name="showEmptyHierarchyItems">
+             <bool>false</bool>
             </property>
             <property name="includeItemAttributeNamesFilter">
              <stringlist notr="true"/>
@@ -784,68 +755,35 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>Output directory</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="ctkPathLineEdit" name="fitnessOutoutDir">
-            <property name="filters">
-             <set>ctkPathLineEdit::Dirs</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="qMRMLNodeComboBox" name="orbitModelSelector2">
+          <item row="5" column="0" colspan="2">
+           <widget class="QPushButton" name="computeHeatmapPushButton">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
               <horstretch>160</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
+            <property name="text">
+             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
             </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
+           </widget>
+          </item>
+          <item row="6" column="0" colspan="2">
+           <widget class="QPushButton" name="projectPtsBatchScenePushButton">
+            <property name="enabled">
              <bool>false</bool>
             </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>Select transform</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="ctkPathLineEdit" name="fitnessInputDir">
-            <property name="filters">
-             <set>ctkPathLineEdit::Dirs</set>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>Input directory</string>
+             <string>Project Points from each plate to the orbit  (reconstructed orbit recommended)</string>
             </property>
            </widget>
           </item>
@@ -853,40 +791,138 @@
         </widget>
        </item>
        <item>
-        <widget class="ctkCollapsibleButton" name="CollapsibleButton_2">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+        <widget class="ctkCollapsibleButton" name="CollapsibleButton_3">
          <property name="text">
-          <string>Calculate plate fitness</string>
+          <string>Additional or new plates point projection from outside the current scene</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_3">
-          <item row="2" column="0">
-           <widget class="QPushButton" name="projectPointsButton">
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="1" column="1">
+           <widget class="ctkPathLineEdit" name="PathLineEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>160</horstretch>
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Projecting points from a plate to orbit</string>
+             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Project Points from each plate to the orbit  (reconstructed orbit recommended)</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QPushButton" name="computeHeatmapPushButton">
+           <widget class="QLabel" name="label">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>160</horstretch>
+             <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+              <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Compute heatmap</string>
+             <string>Additional plate margin points root directory:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="ctkCheckBox" name="CheckBox">
+            <property name="text">
+             <string>Input additional registered plates</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="CollapsibleButton_4">
+         <property name="text">
+          <string>Visualization</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="3" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton_4">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Visualize point projection for individual plates</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton_3">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Visualize all plates with distance heatmap</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Select the model for visualizing point projection results: </string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="SubjectHierarchyComboBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="includeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="includeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QPushButton" name="pushButton_5">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Visualize distance heatmap for individual plate</string>
             </property>
            </widget>
           </item>
@@ -924,6 +960,11 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>ctkCheckBox</class>
+   <extends>QCheckBox</extends>
+   <header>ctkCheckBox.h</header>
+  </customwidget>
+  <customwidget>
    <class>ctkCollapsibleButton</class>
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
@@ -938,11 +979,6 @@
    <class>ctkPathLineEdit</class>
    <extends>QWidget</extends>
    <header>ctkPathLineEdit.h</header>
-  </customwidget>
-  <customwidget>
-   <class>qMRMLNodeComboBox</class>
-   <extends>QWidget</extends>
-   <header>qMRMLNodeComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>qMRMLWidget</class>
@@ -963,22 +999,6 @@
  </customwidgets>
  <resources/>
  <connections>
-  <connection>
-   <sender>plateRegistrationAndFit</sender>
-   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
-   <receiver>SubjectHierarchyComboBox</receiver>
-   <slot>setMRMLScene(vtkMRMLScene*)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>274</x>
-     <y>7</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>348</x>
-     <y>374</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>plateRegistrationAndFit</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>

@@ -41,7 +41,7 @@ class plateRegistration(ScriptedLoadableModule):
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-        self.parent.contributors = ["Chi Zhang (Texas A&M University School of Dentistry)"]  # TODO: replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Chi Zhang (Texas A&M University College of Dentistry)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
         # _() function marks text as translatable to other languages
         self.parent.helpText = _("""
@@ -138,7 +138,7 @@ class plateRegistrationParameterNode:
     allTransformNode: vtkMRMLTransformNode
     plateRegFolderName: str
     ioRootDir: str
-    repairedOrbitModel: vtkMRMLModelNode
+    orbitModelRecon: vtkMRMLModelNode
     registeredPlateInfoJSON: str
     # registeredPlateInfoDict: dict[str, tuple[vtkMRMLModelNode, vtkMRMLTransformNode]]
 
@@ -237,13 +237,19 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.saveAllRegPathLineEdit.connect("currentPathChanged(QString)", self.onSaveAllRegPathLineEdit)
         self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
 
-        #Plate fit tab connections
-        self.ui.plateModelSelector2.setMRMLScene(slicer.mrmlScene)
-        self.ui.orbitModelSelector2.setMRMLScene(slicer.mrmlScene)
-        self.ui.plateTransformSelector.setMRMLScene(slicer.mrmlScene)
-        self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
-        self.ui.projectPointsButton.connect('clicked(bool)', self.onProjectPoints)
-        self.ui.compareFitnessButton.connect('clicked(bool)', self.onCompareFitness)
+        #Plate fit metrics tab connections
+        self.ui.platePtsBatchPathLineEdit.connect("currentPathChanged(QString)", self.onEnablePtsProjection)
+        self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onEnablePtsProjection)
+        self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onVisualizeOrbitRecon)
+        self.ui.orbitReconShComboBox.setMRMLScene(slicer.mrmlScene)
+        self.ui.orbitReconShComboBox.setNodeTypes(['vtkMRMLModelNode'])
+        self.ui.projectPtsBatchScenePushButton.connect('clicked(bool)', self.onProjectPtsBatchScene)
+        # self.ui.plateModelSelector2.setMRMLScene(slicer.mrmlScene)
+        # self.ui.orbitModelSelector2.setMRMLScene(slicer.mrmlScene)
+        # self.ui.plateTransformSelector.setMRMLScene(slicer.mrmlScene)
+        # self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
+        # self.ui.projectPointsButton.connect('clicked(bool)', self.onProjectPoints)
+        # self.ui.compareFitnessButton.connect('clicked(bool)', self.onCompareFitness)
 
         
         self.timer = qt.QTimer()
@@ -291,11 +297,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         self.setParameterNode(self.logic.getParameterNode())
 
-        # Select default input nodes if nothing is selected yet to save a few clicks for the user
-        # if not self._parameterNode.inputVolume:
-        #     firstVolumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
-        #     if firstVolumeNode:
-        #         self._parameterNode.inputVolume = firstVolumeNode
 
     def setParameterNode(self, inputParameterNode: Optional[plateRegistrationParameterNode]) -> None:
         """
@@ -394,6 +395,33 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.saveAllRegPushButton.enabled = True
         else:
             self.ui.saveAllRegPushButton.enabled = False
+
+
+    def onEnablePtsProjection(self):
+        if self.ui.platePtsBatchPathLineEdit.currentPath and bool(self.ui.orbitReconShComboBox.currentItem()):
+            self.ui.computeHeatmapPushButton.enabled = True
+            self.ui.projectPtsBatchScenePushButton.enabled = True
+        else:
+            self.ui.computeHeatmapPushButton.enabled = False
+            self.ui.projectPtsBatchScenePushButton.enabled = False
+
+
+    def onVisualizeOrbitRecon(self):
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        try:
+            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
+        except:
+            pass
+        try:
+            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
+        except:
+            pass
+        if bool(self.ui.orbitReconShComboBox.currentItem()):
+            orbitModelReconItemId = self.ui.orbitReconShComboBox.currentItem()
+            self._parameterNode.orbitModelRecon = shNode.GetItemDataNode(orbitModelReconItemId)
+            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(True)
+        else:
+            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
 
 
     def onPlaceOrbitLmPushButton(self):
@@ -904,6 +932,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
     def onFinalizePlateRegistrationPushButton(self):
         # Get display node IDs
+        logic = plateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         interactionFlag = self.ui.interactionTransformCheckbox.checked
         if interactionFlag == 1:
@@ -915,6 +944,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         orbitModelId = shNode.GetItemByDataNode(self._parameterNode.fractureOrbitModel)
         #
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
+        self._parameterNode.interactionPlateModel.SetName(
+            self._parameterNode.originalPlateModel.GetName() + "_final")
         allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
         self._parameterNode.allTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', allTransformNodeName)
         try:
@@ -938,33 +969,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         # #
         print(f"Registration data stored in the folder {self._parameterNode.plateRegFolderName}.")
 
-        logic = plateRegistrationLogic()
         logic.writeParameterDict(interactionFlag, self.plateRegistrationFolder) #store current registration data in a directionary for reusing
-
-        # currentPlateFolderName = self._parameterNode.plateRegFolderName
-        # #
-        # try:
-        #     registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
-        # except (AttributeError, ValueError, TypeError):
-        #     registeredPlateInfoDict = {}
-        # #
-        #
-        # if interactionFlag == 1:
-        #     registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
-        #         "finalPlateModelNodeID": self._parameterNode.interactionPlateModel.GetID(),
-        #         "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
-        #         "folderItemID": self.plateRegistrationFolder
-        #     }
-        # else:
-        #     registeredPlateInfoDict[self._parameterNode.plateRegFolderName] = {
-        #         "finalPlateModelNodeID": self._parameterNode.rigidRegisteredPlateModel.GetID(),
-        #         "fullTransformNodeID": self._parameterNode.allTransformNode.GetID(),
-        #         "folderItemID": self.plateRegistrationFolder
-        #     }
-        # self._parameterNode.registeredPlateInfoJSON = json.dumps(registeredPlateInfoDict) #flatten into JSON
-        # #
-        # dict_keys = registeredPlateInfoDict.keys()
-        # print(f"registered plate keys are {dict_keys}")
 
         self.ui.interactionTransformCheckbox.checked=0
         self.ui.interactionTransformCheckbox.enabled=False
@@ -1044,9 +1049,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
         dict_keys = registeredPlateInfoDict.keys()
         print(f"existing folders are {dict_keys}")
-        allOutDir = self.ui.saveAllRegPathLineEdit.currentPath
-        # allOutFolder = 'plate_registration' + datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
-        # allOutDir = os.path.join(rootDir, allOutFolder)
+        allOutRoot = self.ui.saveAllRegPathLineEdit.currentPath
+        allOutDir = os.path.join(allOutRoot, 'plate_registration_results')
+        os.makedirs(allOutDir, exist_ok=True)
         for key in dict_keys:
             currentFolderName = key
             outputDir = os.path.join(allOutDir, currentFolderName)
@@ -1067,7 +1072,86 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                 f.write(
                     "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
                 f.write("full transform node MRML node ID: " + fullTransformNode.GetID() + "\n")
+        ptsForProjectionDir = os.path.join(allOutRoot, 'points_for_projection')
+        os.makedirs(ptsForProjectionDir, exist_ok=True)
+        # os.makedirs(os.path.join(allOutDir, 'plate_fit_output'), exist_ok=True)
         self.ui.saveAllRegPushButton.enabled = False
+        self.ui.platePtsBatchPathLineEdit.enabled = True
+        self.ui.platePtsBatchPathLineEdit.currentPath = ptsForProjectionDir
+
+
+    def onProjectPtsBatchScene(self):
+        logic = plateRegistrationLogic()
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
+        rootDir = os.path.dirname(plateMarginInputRootDir)
+        outputRootDir = os.path.join(rootDir, "fit_output", "points_projected_to_recon_orbit")
+        os.makedirs(outputRootDir, exist_ok=True)
+        #
+        plateBaseNames = [
+            name
+            for name in os.listdir(plateMarginInputRootDir)
+            if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
+        ]
+        print(f'plate base names from the raw margin pts folder are {plateBaseNames}')
+        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        # platesKeys = list(registeredPlateInfoDict.keys())
+        # matchByBase = {}
+        # for baseName in plateBaseNames:
+        #     matchesByBase[baseName] = [name for name in platesKeys if name.startswith(baseName)]
+        for currentPlateFolderName in registeredPlateInfoDict.keys():
+            for baseName in plateBaseNames:
+                if not currentPlateFolderName.startswith(baseName):
+                    continue
+                else:
+                    rawPlateMarginCurveDir = os.path.join(plateMarginInputRootDir, baseName)
+                    finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
+                    finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
+                    fullTransformNodeID = registeredPlateInfoDict[currentPlateFolderName]["fullTransformNodeID"]
+                    # fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
+                    for file in os.listdir(rawPlateMarginCurveDir):
+                        if file.endswith((".json", ".fcsv")):
+                            plateMarginCurveNode = slicer.util.loadMarkups(os.path.join(rawPlateMarginCurveDir, file))
+                            plateMarginCurveNode.SetAndObserveTransformNodeID(fullTransformNodeID)
+                            slicer.vtkSlicerTransformLogic().hardenTransform(plateMarginCurveNode)
+                            plateMarginPtsNode = logic.curveToFiducialMarkups(plateMarginCurveNode)
+                            plateMarginPtsNode.SetName(plateMarginCurveNode.GetName())
+                            #
+                            for i in range(plateMarginPtsNode.GetNumberOfControlPoints()):
+                                newLabel = str(i+1)
+                                plateMarginPtsNode.SetNthControlPointLabel(i, newLabel)
+                            plateMarginPtsNode.GetDisplayNode().SetSelectedColor(0, 0, 1)
+                            #
+                            # curve to fiducial markups
+                            projectedPlateLMNode = logic.projectPoints(
+                                sourceLMNode = plateMarginPtsNode,
+                                sourceModel=finalPlateModelNode,
+                                targetModel=self._parameterNode.orbitModelRecon
+                            )
+                            for i in range(projectedPlateLMNode.GetNumberOfControlPoints()):
+                                newLabel = str(i+1)
+                                projectedPlateLMNode.SetNthControlPointLabel(i, newLabel)
+                            #
+                            projectedPlateLMNode.GetDisplayNode().SetSelectedColor(0, 1, 0)
+                            #
+                            outputFolderPath = os.path.join(outputRootDir, currentPlateFolderName)
+                            #
+                            outputFolderOnPlate = os.path.join(outputFolderPath, "on_the_plate")
+                            os.makedirs(outputFolderOnPlate, exist_ok=True)
+                            outputFileOnPlate = os.path.join(outputFolderOnPlate, plateMarginPtsNode.GetName() + "_onPlate.mrk.json")
+                            slicer.util.saveNode(plateMarginPtsNode, outputFileOnPlate)
+                            #
+                            outputFolderProj = os.path.join(outputFolderPath, "projected_to_orbit")
+                            os.makedirs(outputFolderProj, exist_ok=True)
+                            projectedOutputFile = os.path.join(outputFolderProj, plateMarginPtsNode.GetName() + "_projected.mrk.json")
+                            slicer.util.saveNode(projectedPlateLMNode, projectedOutputFile)
+                            #
+                            slicer.mrmlScene.RemoveNode(plateMarginCurveNode)
+                            slicer.mrmlScene.RemoveNode(plateMarginPtsNode)
+                            slicer.mrmlScene.RemoveNode(projectedPlateLMNode)
+
+
+
 
 
     def onPlateHeatmap(self):
@@ -1088,57 +1172,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         scalarArray = np.abs(scalarArray)
         outputDir = self.ui.fitnessOutoutDir.currentPath
         logic.plotScalarHistogram(scalarArray, outputDir)
-        
 
-    def onProjectPoints(self):
-        #
-        logic = plateRegistrationLogic()
-        import os
-        plateLMDir = self.ui.fitnessInputDir.currentPath
-        alignedPlateModelNode = self.ui.plateModelSelector2.currentNode()
-        orbitReconModelNode = self.ui.orbitModelSelector2.currentNode()
-        allTransformNode = self.ui.plateTransformSelector.currentNode()
-        #
-        #Create folder to store results
-        self.fitfolderNode = slicer.mrmlScene.GetSubjectHierarchyNode()
-        sceneItemID = self.fitfolderNode.GetSceneItemID()
-        self.plateFitFolder = self.fitfolderNode.CreateFolderItem(
-            sceneItemID, self.ui.plateModelSelector2.currentNode().GetName() + "_projected_lm"
-        )
-        #
-        # for dir in plateLMSubdir:
-        #     if os.path.isdir(os.path.join(plateLMRootPath, dir)):
-        #         outputRoot = slicer.ui.fitnessOutoutDir.currentPath()
-        #         subDirName = dir + "_projected_lm"
-        #Set up output folder name
-        outputRoot = self.ui.fitnessOutoutDir.currentPath
-        subDirName = os.path.basename(plateLMDir) + "_projected_lm"
-        outputSubDir = os.path.join(outputRoot, subDirName)
-        os.mkdir(outputSubDir)
-        
-        for file in os.listdir(plateLMDir):
-            if file.endswith((".json", ".fcsv")):
-                self.plateBoundaryLMNode = slicer.util.loadMarkups(os.path.join(plateLMDir, file))
-                self.plateBoundaryLMNode.SetAndObserveTransformNodeID(allTransformNode.GetID())
-                slicer.vtkSlicerTransformLogic().hardenTransform(self.plateBoundaryLMNode)
-                self.projectedPlateLMNode = logic.projectPoints(
-                    sourceLMNode = self.plateBoundaryLMNode, 
-                    sourceModel=alignedPlateModelNode, 
-                    targetModel=orbitReconModelNode
-                )
-                self.projectedPlateLMNode.SetName(self.plateBoundaryLMNode.GetName()+"_projected_to_orbit")
-                #Put original and projected lm in a folder
-                plateBoundaryLMItem = self.fitfolderNode.GetItemByDataNode(self.plateBoundaryLMNode)
-                self.fitfolderNode.SetItemParent(plateBoundaryLMItem, self.plateFitFolder)
-                projectedPlateLMItem = self.fitfolderNode.GetItemByDataNode(self.projectedPlateLMNode)
-                self.fitfolderNode.SetItemParent(projectedPlateLMItem, self.plateFitFolder)                        
-                #
-                #Save node
-                outputFilePath = os.path.join(outputSubDir, self.plateBoundaryLMNode.GetName()+"_aligned.mrk.json")
-                slicer.util.saveNode(self.plateBoundaryLMNode, outputFilePath)
-                outputFilePath = os.path.join(outputSubDir, self.plateBoundaryLMNode.GetName()+"_projected_to_orbit.mrk.json")
-                slicer.util.saveNode(self.projectedPlateLMNode, outputFilePath)
-        return
 
 
 
@@ -1519,8 +1553,8 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 
         keysToRemove = []
         for key in registeredPlateInfoDict.keys():
-            folderItemId = registeredPlateInfoDict[key]["folderItemID"]
-            if not shNode.GetItemLevel(folderItemId):
+            folderItemId = shNode.GetItemByName(key)
+            if folderItemId < 1:
                 keysToRemove.append(key)
 
         for key in keysToRemove:
@@ -1570,6 +1604,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             shNode.GetItemChildren(shItemId, grandChildIds)
             if grandChildIds.GetNumberOfIds() > 0:
                 exportNodes(shItemId, outputFolder + "/" + shNode.GetItemName(shItemId))
+
 
 
 
@@ -1897,44 +1932,14 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         return projectedPointData
 
 
+    def curveToFiducialMarkups(self, curveNode):
+        pt = [0, 0, 0]
+        lmNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+        for i in range(curveNode.GetNumberOfControlPoints()):
+            curveNode.GetNthControlPointPosition(i, pt)
+            lmNode.AddControlPoint(pt)
+        return lmNode
 
-    # def process(self,
-    #             inputVolume: vtkMRMLScalarVolumeNode,
-    #             outputVolume: vtkMRMLScalarVolumeNode,
-    #             imageThreshold: float,
-    #             invert: bool = False,
-    #             showResult: bool = True) -> None:
-    #     """
-    #     Run the processing algorithm.
-    #     Can be used without GUI widget.
-    #     :param inputVolume: volume to be thresholded
-    #     :param outputVolume: thresholding result
-    #     :param imageThreshold: values above/below this threshold will be set to 0
-    #     :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    #     :param showResult: show output volume in slice viewers
-    #     """
-    #
-    #     if not inputVolume or not outputVolume:
-    #         raise ValueError("Input or output volume is invalid")
-    #
-    #     import time
-    #
-    #     startTime = time.time()
-    #     logging.info("Processing started")
-    #
-    #     # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    #     cliParams = {
-    #         "InputVolume": inputVolume.GetID(),
-    #         "OutputVolume": outputVolume.GetID(),
-    #         "ThresholdValue": imageThreshold,
-    #         "ThresholdType": "Above" if invert else "Below",
-    #     }
-    #     cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    #     # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    #     slicer.mrmlScene.RemoveNode(cliNode)
-    #
-    #     stopTime = time.time()
-    #     logging.info(f"Processing completed in {stopTime-startTime:.2f} seconds")
 
 
 #
