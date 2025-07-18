@@ -392,7 +392,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Plate and orbit intersection</string>
+          <string>Plate intractive adjustment</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -697,29 +697,6 @@
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Repaired orbit model: </string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="ctkPathLineEdit" name="platePtsBatchPathLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="filters">
-             <set>ctkPathLineEdit::Dirs</set>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_8">
             <property name="sizePolicy">
@@ -733,8 +710,40 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Repaired orbit model: </string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QPushButton" name="computeHeatmapPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>160</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="1">
            <widget class="qMRMLSubjectHierarchyComboBox" name="orbitReconShComboBox">
+            <property name="noneEnabled">
+             <bool>true</bool>
+            </property>
             <property name="showCurrentItemParents">
              <bool>false</bool>
             </property>
@@ -755,19 +764,13 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0" colspan="2">
-           <widget class="QPushButton" name="computeHeatmapPushButton">
+          <item row="0" column="1">
+           <widget class="ctkPathLineEdit" name="platePtsBatchPathLineEdit">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>160</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
+            <property name="filters">
+             <set>ctkPathLineEdit::Dirs</set>
             </property>
            </widget>
           </item>
@@ -784,68 +787,6 @@
             </property>
             <property name="text">
              <string>Project Points from each plate to the orbit  (reconstructed orbit recommended)</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="ctkCollapsibleButton" name="CollapsibleButton_3">
-         <property name="text">
-          <string>Additional or new plates point projection from outside the current scene</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_7">
-          <item row="1" column="1">
-           <widget class="ctkPathLineEdit" name="PathLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton_2">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Project Points from each plate to the orbit  (reconstructed orbit recommended)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Additional plate margin points root directory:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="ctkCheckBox" name="CheckBox">
-            <property name="text">
-             <string>Input additional registered plates</string>
             </property>
            </widget>
           </item>
@@ -936,10 +877,13 @@
        <string>Compare fit</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_4">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="compareFitnessButton">
+       <item row="4" column="0">
+        <widget class="QPushButton" name="compareFitPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
            <horstretch>160</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -949,8 +893,105 @@
          </property>
         </widget>
        </item>
+       <item row="5" column="0">
+        <widget class="QPushButton" name="pushButton_6">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show superimposed plates with distance heatmap</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QPushButton" name="pushButton_7">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show points on the margins</string>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="0">
-        <widget class="QPlainTextEdit" name="fitnessRankInfoBox"/>
+        <widget class="ctkCheckBox" name="cutsomFitDirCheckBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>User-defined input directory</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="qMRMLSubjectHierarchyTreeView" name="compareFitSHTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="levelFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+           <string>vtkMarkupsFiducialNode</string>
+          </stringlist>
+         </property>
+         <property name="hideChildNodeTypes">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="ctkPathLineEdit" name="compareFitPathLineEdit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="filters">
+          <set>ctkPathLineEdit::Dirs</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QCheckBox" name="compareMarginDistsCheckBox">
+         <property name="text">
+          <string>Compare distances between plate margins and orbits (Requiring points projection from margins to the reconstructed orbit)</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

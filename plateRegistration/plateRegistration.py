@@ -1,5 +1,7 @@
+import csv
 import logging
 import os
+from operator import index
 from typing import Annotated, Optional
 
 import vtk
@@ -244,12 +246,14 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.orbitReconShComboBox.setMRMLScene(slicer.mrmlScene)
         self.ui.orbitReconShComboBox.setNodeTypes(['vtkMRMLModelNode'])
         self.ui.projectPtsBatchScenePushButton.connect('clicked(bool)', self.onProjectPtsBatchScene)
-        # self.ui.plateModelSelector2.setMRMLScene(slicer.mrmlScene)
-        # self.ui.orbitModelSelector2.setMRMLScene(slicer.mrmlScene)
-        # self.ui.plateTransformSelector.setMRMLScene(slicer.mrmlScene)
-        # self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
-        # self.ui.projectPointsButton.connect('clicked(bool)', self.onProjectPoints)
-        # self.ui.compareFitnessButton.connect('clicked(bool)', self.onCompareFitness)
+        self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
+
+
+        #Compare fit tab connections
+        self.ui.compareFitSHTreeView.setMRMLScene(slicer.mrmlScene)
+        self.ui.cutsomFitDirCheckBox.connect("toggled(bool)", self.onCutsomFitDirCheckBox)
+        self.ui.compareFitPathLineEdit.connect("currentPathChanged(QString)", self.onCompareFitPathLineEdit)
+        self.ui.compareFitPushButton.connect("clicked(bool)", self.onCompareFitPushButton)
 
         
         self.timer = qt.QTimer()
@@ -382,6 +386,19 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             and self.ui.plateModelSelector.currentItem() and self.ui.plateFiducialSelector.currentItem())
 
 
+    def onCutsomFitDirCheckBox(self):
+        if self.ui.cutsomFitDirCheckBox.isChecked():
+            self.ui.compareFitPathLineEdit.enabled = True
+        else:
+            self.ui.compareFitPathLineEdit.enabled = False
+
+    def onCompareFitPathLineEdit(self):
+        if self.ui.compareFitPathLineEdit.currentPath:
+            self.ui.compareFitPushButton.enabled = True
+        else:
+            self.ui.compareFitPushButton.enabled = False
+
+
     def onCurrentRegResultsPathLineEdit(self):
         if self.ui.currentRegResultsPathLineEdit.currentPath:
             self.ui.saveCurrentRegPushButton.enabled = True
@@ -435,7 +452,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.orbitFiducialSelector.setCurrentItem(orbitLmNodeId)
         logic.placeLm(self._parameterNode.orbitLm)
 
-
     def onPlacePlateLmPushButton(self):
         logic = plateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
@@ -446,7 +462,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         originalPlateLmNodeId = shNode.GetItemByDataNode(self._parameterNode.originalPlateLm)
         self.ui.plateFiducialSelector.setCurrentItem(originalPlateLmNodeId)
         logic.placeLm(self._parameterNode.originalPlateLm)
-
 
     def onInitialRegistrationPushButton(self):
         logic = plateRegistrationLogic()
@@ -1026,6 +1041,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.rigidRegisteredPlateModel = shNode.GetItemDataNode(rigidPlateModelId)
             self._parameterNode.rigidRegisteredPlateModel.GetDisplayNode().SetVisibility(True)
 
+
     def onSaveCurrentRegPushButton(self):
         logic = plateRegistrationLogic()
         resultsFolderName = self._parameterNode.plateRegFolderName
@@ -1040,9 +1056,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         logFilePath = os.path.join(outputFolder, logFileName)
         with open(logFilePath, "w") as f:
             f.write("final registered plate file name: " + self._parameterNode.interactionPlateModel.GetName() + ".ply" + "\n")
-            f.write("final regietered plate MRML node ID: " + self._parameterNode.interactionPlateModel.GetID() + "\n")
+            f.write("final registered plate MRML node ID: " + self._parameterNode.interactionPlateModel.GetID() + "\n")
             f.write("full transoform node file name: " + self._parameterNode.allTransformNode.GetName() + ".h5" + "\n")
             f.write("full transform node MRML node ID: " + self._parameterNode.allTransformNode.GetID() + "\n")
+
 
     def onSaveAllRegPushButton(self):
         logic = plateRegistrationLogic()
@@ -1068,7 +1085,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                 f.write(
                     "final registered plate file name: " + interactionPlateModelNode.GetName() + ".ply" + "\n")
                 f.write(
-                    "final regietered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
+                    "final registered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
                 f.write(
                     "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
                 f.write("full transform node MRML node ID: " + fullTransformNode.GetID() + "\n")
@@ -1085,7 +1102,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
         rootDir = os.path.dirname(plateMarginInputRootDir)
-        outputRootDir = os.path.join(rootDir, "fit_output", "points_projected_to_recon_orbit")
+        plateRegDir = os.path.join(rootDir, 'plate_registration_results')
+        outputRootDir = os.path.join(rootDir, "fit_output", "fit_metrics")
         os.makedirs(outputRootDir, exist_ok=True)
         #
         plateBaseNames = [
@@ -1093,26 +1111,35 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             for name in os.listdir(plateMarginInputRootDir)
             if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
         ]
-        print(f'plate base names from the raw margin pts folder are {plateBaseNames}')
-        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
-        # platesKeys = list(registeredPlateInfoDict.keys())
-        # matchByBase = {}
-        # for baseName in plateBaseNames:
-        #     matchesByBase[baseName] = [name for name in platesKeys if name.startswith(baseName)]
-        for currentPlateFolderName in registeredPlateInfoDict.keys():
+        # print(f'plate base names from the raw margin pts folder are {plateBaseNames}')
+        # registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        plateRegFolders = [folder for folder in os.listdir(plateRegDir) if os.path.isdir(os.path.join(plateRegDir, folder))]
+        for currentPlateFolderName in plateRegFolders:
             for baseName in plateBaseNames:
                 if not currentPlateFolderName.startswith(baseName):
                     continue
                 else:
                     rawPlateMarginCurveDir = os.path.join(plateMarginInputRootDir, baseName)
-                    finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
-                    finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
-                    fullTransformNodeID = registeredPlateInfoDict[currentPlateFolderName]["fullTransformNodeID"]
+                    # finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
+                    # finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
+                    # fullTransformNodeID = registeredPlateInfoDict[currentPlateFolderName]["fullTransformNodeID"]
                     # fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
+                    logfile = currentPlateFolderName + ".log"
+                    logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
+                    with open(logfilepath, "r") as f:
+                        lines = [L.strip() for L in f]
+                    finalPlateFile = lines[0].split(":", 1)[1].strip()
+                    finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
+                    finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
+                    fullTransformFile = lines[2].split(":", 1)[1].strip()
+                    fullTransformPath = os.path.join(plateRegDir, currentPlateFolderName, fullTransformFile)
+                    fullTransformNode = slicer.util.loadTransform(fullTransformPath)
+
                     for file in os.listdir(rawPlateMarginCurveDir):
                         if file.endswith((".json", ".fcsv")):
                             plateMarginCurveNode = slicer.util.loadMarkups(os.path.join(rawPlateMarginCurveDir, file))
-                            plateMarginCurveNode.SetAndObserveTransformNodeID(fullTransformNodeID)
+                            plateMarginCurveNode.SetName(file.split('.')[0])
+                            plateMarginCurveNode.SetAndObserveTransformNodeID(fullTransformNode.GetID())
                             slicer.vtkSlicerTransformLogic().hardenTransform(plateMarginCurveNode)
                             plateMarginPtsNode = logic.curveToFiducialMarkups(plateMarginCurveNode)
                             plateMarginPtsNode.SetName(plateMarginCurveNode.GetName())
@@ -1132,16 +1159,16 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                                 newLabel = str(i+1)
                                 projectedPlateLMNode.SetNthControlPointLabel(i, newLabel)
                             #
-                            projectedPlateLMNode.GetDisplayNode().SetSelectedColor(0, 1, 0)
+                            projectedPlateLMNode.GetDisplayNode().SetSelectedColor(1, 0, 0)
                             #
                             outputFolderPath = os.path.join(outputRootDir, currentPlateFolderName)
                             #
-                            outputFolderOnPlate = os.path.join(outputFolderPath, "on_the_plate")
+                            outputFolderOnPlate = os.path.join(outputFolderPath, "points_on_the_plate")
                             os.makedirs(outputFolderOnPlate, exist_ok=True)
                             outputFileOnPlate = os.path.join(outputFolderOnPlate, plateMarginPtsNode.GetName() + "_onPlate.mrk.json")
                             slicer.util.saveNode(plateMarginPtsNode, outputFileOnPlate)
                             #
-                            outputFolderProj = os.path.join(outputFolderPath, "projected_to_orbit")
+                            outputFolderProj = os.path.join(outputFolderPath, "points_projected_to_orbit")
                             os.makedirs(outputFolderProj, exist_ok=True)
                             projectedOutputFile = os.path.join(outputFolderProj, plateMarginPtsNode.GetName() + "_projected.mrk.json")
                             slicer.util.saveNode(projectedPlateLMNode, projectedOutputFile)
@@ -1149,147 +1176,161 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                             slicer.mrmlScene.RemoveNode(plateMarginCurveNode)
                             slicer.mrmlScene.RemoveNode(plateMarginPtsNode)
                             slicer.mrmlScene.RemoveNode(projectedPlateLMNode)
+                        slicer.mrmlScnee.RemoveNode(finalPlateModelNode)
+                        slicer.mrmlScene.RemoveNode(fullTransformNode)
+        self.ui.compareFitPathLineEdit.currentPath = outputRootDir
+        self.ui.compareMarginDistsCheckBox.checked = 1
 
 
 
 
 
     def onPlateHeatmap(self):
-        self.plateModelNode2 = self.ui.plateModelSelector2.currentNode()
-        self.orbitReconModelNode = self.ui.orbitModelSelector2.currentNode()
         logic = plateRegistrationLogic()
-        plate_distanceMap2, self.plateModelNode2=logic.heatmap(templateMesh = self.plateModelNode2, currentMesh = self.orbitReconModelNode)
-
-        d = self.plateModelNode2.GetDisplayNode()
-        d.SetScalarVisibility(True)
-        d.SetActiveScalarName('Distance')
-        colorTableNode = slicer.util.getNode('RedGreenBlue')
-        d.SetAndObserveColorNodeID(colorTableNode.GetID())
-        d.SetScalarRangeFlagFromString('Manual')
-        d.SetScalarRange(0, 5)
-        
-        scalarArray = slicer.util.arrayFromModelPointData(self.plateModelNode2, 'Distance')
-        scalarArray = np.abs(scalarArray)
-        outputDir = self.ui.fitnessOutoutDir.currentPath
-        logic.plotScalarHistogram(scalarArray, outputDir)
-
-
-
-
-    
-    def onCompareFitness(self):
-        #Retrieve files from the output root
-        import os
-        projectLMOutputRoot = self.ui.fitnessOutoutDir.currentPath
-        print("projectLMOutputRoot")
-        # dirList = os.listdir(projectLMOutputRoot)
-        dirList = [item for item in os.listdir(projectLMOutputRoot) if os.path.isdir(os.path.join(projectLMOutputRoot, item))]
-        print(f"dirlist is {dirList}")
-        if len(dirList) < 1:
-            logging.error('No folders for computing plate fitness. Project the landmarks first')
-            return
-        allLMData = []
-        allLMNames = []
-        for folder in dirList:
-            #store each metric in a list of fidual array
-            subfolderPath = os.path.join(projectLMOutputRoot, folder)
-            for file in os.listdir(subfolderPath):
-                if file.endswith((".fscv", ".json")):
-                    lmNode = slicer.util.loadMarkups(os.path.join(subfolderPath, file))
-                    lm = np.zeros(shape=(lmNode.GetNumberOfControlPoints(), 3))
-                    point = [0, 0, 0]
-                    for i in range(lmNode.GetNumberOfControlPoints()):
-                        lmNode.GetNthControlPointPosition(i, point)
-                        lm[i, :] = point
-                    allLMData.append(lm)
-                    allLMNames.append(os.path.basename(file))
-                    slicer.mrmlScene.RemoveNode(lmNode)
-        allEdgeDists = []
-        meanEdgeDistsList = []
-        counters = [x for x in range(len(allLMData)-1) if x % 2 == 0]
-        for i in counters:
-            edgeLm = allLMData[i]
-            edgeLmProj = allLMData[i+1]
-            edgeLm_dist = np.sqrt(np.sum(np.square(edgeLm-edgeLmProj), axis = 1))
-            allEdgeDists.append(edgeLm_dist)
-            meanEdgeDistsList.append(np.mean(edgeLm_dist))
+        plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
+        rootDir = os.path.dirname(plateMarginInputRootDir)
+        outputRootDir = os.path.join(rootDir, "fit_output", "fit_metrics")
+        os.makedirs(outputRootDir, exist_ok=True)
         #
-        setsNum = len(dirList)
-        print(f"allLMNames are {allLMNames}")
-        print(f"setsNum is {setsNum}")
-        variableNum = int(len(allEdgeDists)/setsNum)
-        print(f"variableNum is {variableNum}")
-        allEdgeDistsArr = np.reshape(allEdgeDists, (setsNum, variableNum, edgeLm.shape[0]))
-        print(allEdgeDistsArr)
-        meanEdgeDistsArr = np.reshape(meanEdgeDistsList, (setsNum, variableNum))
-        print(meanEdgeDistsArr)
-        #ranking
-        rankArray = np.zeros(shape = meanEdgeDistsArr.shape)
-        for i in range(meanEdgeDistsArr.shape[1]):
-            rankArray[:, i] = [sorted(meanEdgeDistsArr[:, i]).index(j) for j in meanEdgeDistsArr[:, i]]
-        #Overall ranking
-        rankScoreSum = np.sum(rankArray, axis = 1)
-        plateRanks = [sorted(rankScoreSum).index(j) for j in rankScoreSum]
-        print(rankArray)
-        print(rankScoreSum)
-        print(plateRanks)
-        
-        self.ui.fitnessRankInfoBox.clear
-        self.ui.fitnessRankInfoBox.insertPlainText(
-          f":: The ranks of plate fitness are. \n"
-        )
-        # self.ui.fitnessRankInfoBox.insertPlainText(
-        #   f":: {}The ranks of plate fitness are. \n"
-        # )
-        for i in range(len(dirList)):
-            self.ui.fitnessRankInfoBox.insertPlainText(
-              f":: {dirList[i]}: rank {plateRanks[i]+1}. \n"
-            )
-        
-        #plot mean distance
-        # makeScatterPlotWithFactors(
-        # self, dataArray, factors, title, xAxisName, yAxisName, subjectID
-        # ):
-        
+        plateBaseNames = [
+            name
+            for name in os.listdir(plateMarginInputRootDir)
+            if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
+        ]
+        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        for currentPlateFolderName in registeredPlateInfoDict.keys():
+            for baseName in plateBaseNames:
+                if not currentPlateFolderName.startswith(baseName):
+                    continue
+                else:
+                    finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
+                    finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
+                    orbitReconModelNode = self._parameterNode.orbitModelRecon
+                    plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
+                    #
+                    d = finalPlateModelNode.GetDisplayNode()
+                    d.SetScalarVisibility(True)
+                    d.SetActiveScalarName('Distance')
+                    colorTableNode = slicer.util.getNode('RedGreenBlue')
+                    d.SetAndObserveColorNodeID(colorTableNode.GetID())
+                    d.SetScalarRangeFlagFromString('Manual')
+                    d.SetScalarRange(0, 5)
+                    #Save scalar as csv & histogram
+                    scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
+                    scalarArray = np.abs(scalarArray)
+                    outputDir = os.path.join(outputRootDir, currentPlateFolderName)
+                    os.makedirs(outputDir, exist_ok=True)
+                    logic.plotScalarHistogram(scalarArray, outputDir, baseName, currentPlateFolderName)
+                    #
+                    #Saving in PLY with color table
+                    platePLYName = currentPlateFolderName + "_heatmap.ply"
+                    platePLYPath = os.path.join(outputDir, platePLYName)
+                    logic.savePLYWithScalarTable(finalPlateModelNode, platePLYPath)
+                    #
+                    plateVTKName = currentPlateFolderName + "_heatmap.vtk" #directly saving the scalar with the model
+                    plateVTKPath = os.path.join(outputDir, plateVTKName)
+                    slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
+                    self.ui.compareFitPathLineEdit.currentPath = outputRootDir
+
+
+
+
+    def onCompareFitPushButton(self):
         logic = plateRegistrationLogic()
-        namesCounter = [x for x in range(len(allLMNames)-1) if x % 2 == 0]
-        measurementNames = [allLMNames[i] for i in namesCounter]
-        measurementNames = np.array_split(measurementNames, setsNum)
-        meanPlotTitle = "Mean distances plot"
-        
-        #Matplot lib
-        xLabel = "Plate margins"
-        logic.matplotlibScatterPlot(meanEdgeDistsArr, dirList, meanPlotTitle, xLabel, projectLMOutputRoot)
+        #Retrieve files from the output root
+        fitMetricsDir = self.ui.compareFitPathLineEdit.currentPath
+        fitOutputRootDir = os.path.dirname(fitMetricsDir)
 
-        #Plot mean distances in Slicer
-        meanDistsScatterPlot = logic.makeScatterPlotWithFactors(
-            meanEdgeDistsArr, dirList, meanPlotTitle, "Measurements", "Distances(mm)", measurementNames
+        rootDir = os.path.dirname(fitOutputRootDir)
+
+        compareFitExportDir = os.path.join(fitOutputRootDir, 'compare_fit_output')
+        os.makedirs(compareFitExportDir, exist_ok=True)
+
+        plateFolders = [folder for folder in os.listdir(fitMetricsDir) if os.path.isdir(folder)]
+        plateFolders = sorted(plateFolders)
+
+        if self.ui.compareMarginDistsCheckBox.isChecked():
+            plateMarginInputRootDir = os.path.join(rootDir, 'points_for_projection')
+
+            plateMarginNames = logic.getPlateMarginNames(plateMarginInputRootDir)
+
+            #dictionary format: dict[margin_i][plate_j]
+            marginPtsDict = logic.createPtsDict(fitMetricsDir, plateMarginNames, 'points_on_the_plate')
+            projPtsDict = logic.createPtsDict(fitMetricsDir, plateMarginNames, 'points_projected_to_orbit')
+
+            plateOrbitDistsDict = logic.computeMarginProjDists(fitMetricsDir, marginPtsDict, projPtsDict)
+            #The format is plateOrbitDistsDict[margin][plate] = [lm1_dist, lm2_dist, lm3_dist, ...]
+
+            meanDistsDict, meanDistsArray, rankArray, plateOverallRanks = logic.rankPlateMarginDists(plateOrbitDistsDict)
+            marginKeys = list(plateOrbitDistsDict.keys())
+            plateKeys = list(plateOrbitDistsDict[marginKeys[0]].keys())
+            #
+            self.ui.fitnessRankInfoBox.clear
+            self.ui.fitnessRankInfoBox.insertPlainText(
+                f":: The ranks of plate fit based on distances between margin and orbit are: \n"
             )
-        
-        # Switch to a Slicer layout that contains a plot view for plotwidget
-        layoutManager = slicer.app.layoutManager()
-        layoutManager.setLayout(503)
-        
-        slicer.modules.plots.logic().ShowChartInLayout(meanDistsScatterPlot)
+            # self.ui.fitnessRankInfoBox.insertPlainText(
+            #   f":: {}The ranks of plate fitness are. \n"
+            # )
+            for i in range(len(plateKeys)):
+                self.ui.fitnessRankInfoBox.insertPlainText(
+                    f":: {plateKeys[i]}: rank {plateOverallRanks[i] + 1}. The mean distance to the orbit is {round(np.mean(meanDistsArray[:, i]), 3)}mm \n "
+                )
+            # Rank plate by margin
+            for i, margin in enumerate(marginKeys):
+                self.ui.fitnessRankInfoBox.insertPlainText(
+                    f":: {margin}: ranks of all registered plates are: \n "
+                )
+                for j, plate in enumerate(plateKeys):
+                    self.ui.fitnessRankInfoBox.insertPlainText(
+                        f":: {plate}: rank {int(rankArray[i, j])}. The mean distance to the orbit is {round(meanDistsArray[i, j], 3)}mm \n "
+                    )
+                self.ui.fitnessRankInfoBox.insertPlainText(
+                    f":: \n "
+                )
 
-        plotWidget = layoutManager.plotWidget(0)
-        plotViewNode = plotWidget.mrmlPlotViewNode()
-        plotViewNode.SetPlotChartNodeID(meanDistsScatterPlot.GetID())
-        
+            # Plotting
+            # Define color map and increase contrast
+            import matplotlib.pyplot as plt
+            cmap = plt.get_cmap("viridis")
+            low, high = 0.2, 0.8
+            colors = cmap(np.linspace(low, high, len(plateKeys)))  # shape = number of registered plates x 4 channels (rgba)
 
-        #Plot each plate margin distance in allEdgeDistsArr
-        #The shape is (setsNum, variableNum, edgeLm.shape[0])
-        for i in range(variableNum):
-            marginDistsArray = np.zeros(shape = (setsNum, edgeLm.shape[0]))
-            for j in range(setsNum):
-                marginDistsArray[j, :] = allEdgeDistsArr[j, i, :]
+            marginKeys = list(meanDistsDict.keys())
+            plateKeys = list(meanDistsDict[marginKeys[0]].keys())
 
-                marginPlotTilte = "plate_margin_" + str(i+1) + "_dists_to_orbit"
-                xLabel = "Points"
-                logic.matplotlibScatterPlot(marginDistsArray, dirList, marginPlotTilte, xLabel, projectLMOutputRoot)
+            logic.plottingMarginDists(colors, marginKeys, plateKeys, meanDistsArray, compareFitExportDir, plateOrbitDistsDict)
+            #
+            # Recolor plate lm according to color map
+            for i in range(len(plateFolders)):
+                plateMarginPtsDir = os.path.join(fitMetricsDir, plateFolders[i], "points_on_the_plate")
+                for file in os.listdir(plateMarginPtsDir):
+                    if file.endswith((".json", ".fcsv")):
+                        lmNode = slicer.util.loadMarkups(os.path.join(plateMarginPtsDir, file))
+                        lmNode.GetDisplayNode().SetSelectedColor(colors[i, 0:3])
+                        slicer.util.saveNode(os.path.join(plateMarginPtsDir, file))
+                        slicer.mrmlScene.RemoveNode(lmNode)
 
+
+        #Rank plate heatmap
+        plateNames = plateFolders
+        print(f"plateNames are {plateNames}")
+        rankHeatmapList, meanHeatmapArrayList = logic.rankHeatmap(fitMetricsDir, plateNames)
+        # plateNames_reordered = [plateNames[i] for i in rankHeatmapList]
+        plateNames_reordered = [name for _, name in sorted(zip(rankHeatmapList, plateNames))]
+        print(f"The rank order is {rankHeatmapList}")
+        print(f"plate names are {plateNames}")
+        print(f"reordered plate names are {plateNames_reordered}")
+        self.ui.fitnessRankInfoBox.insertPlainText(
+            f":: The ranks of plate fit based on overall distances between the plate and orbit as shown in the heatmap are:\n "
+        )
+        for i in range(len(plateNames_reordered)):
+            self.ui.fitnessRankInfoBox.insertPlainText(
+              f":: rank {i+1}: {plateNames_reordered[i]}. The mean plate distance to the orbit is {sorted(meanHeatmapArrayList)[i]}mm \n "
+            )
+
+        logic.createRankDf(plateNames, rankHeatmapList, meanHeatmapArrayList, compareFitExportDir)
         return
-
 
 #
 # plateRegistrationLogic
@@ -1596,9 +1637,18 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
                     ext = ".mark.json"
                 else:
                     ext = ".vtk"
-                filename = fileBaseName + ext
-                filepath = outputFolder + "/" + filename
-                slicer.util.exportNode(dataNode, filepath)
+                #
+                if ext == ".ply":
+                    filenamePLY = fileBaseName + ext
+                    filepathPLY = outputFolder + "/" + filenamePLY
+                    slicer.util.exportNode(dataNode, filepathPLY)
+                    filenameVTK = fileBaseName + ".vtk" #To save with scalar value
+                    filepathVTK = outputFolder + "/" + filenameVTK
+                    slicer.util.exportNode(dataNode, filepathVTK)
+                else:
+                    filename = fileBaseName + ext
+                    filepath = outputFolder + "/" + filename
+                    slicer.util.exportNode(dataNode, filepath)
             # Write all children of this child item
             grandChildIds = vtk.vtkIdList()
             shNode.GetItemChildren(shItemId, grandChildIds)
@@ -1607,8 +1657,24 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 
 
 
+    def savePLYWithScalarTable(self, modelNode, plyFilePath):
+        modelDisplayNode = modelNode.GetDisplayNode()
+        triangles = vtk.vtkTriangleFilter()
+        triangles.SetInputConnection(modelDisplayNode.GetOutputPolyDataConnection())
 
-    def plotScalarHistogram(self, scalarArray, outputDir):
+        plyWriter = vtk.vtkPLYWriter()
+        plyWriter.SetInputConnection(triangles.GetOutputPort())
+        lut = vtk.vtkLookupTable()
+        lut.DeepCopy(modelDisplayNode.GetColorNode().GetLookupTable())
+        lut.SetRange(modelDisplayNode.GetScalarRange())
+        plyWriter.SetLookupTable(lut)
+        plyWriter.SetArrayName(modelDisplayNode.GetActiveScalarName())
+
+        plyWriter.SetFileName(plyFilePath)
+        plyWriter.Write()
+
+
+    def plotScalarHistogram(self, scalarArray, outputDir, imageTitleBase, imageFileNameBase):
         try:
           import matplotlib
         except ModuleNotFoundError:
@@ -1617,7 +1683,6 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         matplotlib.use("Agg")
           # from pylab import *
         import numpy as np
-        import os
         import pandas
         # Set the last bin edge to np.inf so that all values >= 5 go into the last bin.
         bins = np.array(list(np.arange(0, 6, 1)) + [np.inf])
@@ -1632,7 +1697,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # Label the axes and add a title
         ax.set_xlabel('Distance (mm)')
         ax.set_ylabel('Percentage (%)')
-        ax.set_title("1072 large plate distances")
+        ax.set_title(imageTitleBase + "_heatmap_distances_to_orbit")
         
         # Set custom x-axis tick labels:
         # Labels 0 through 5 and then the maximum distance value as the last label.
@@ -1642,7 +1707,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         ax.set_xticks(plot_bins)
         ax.set_xticklabels(xtick_labels)
         
-        imageFileName = "plate_dists.png"
+        imageFileName = imageFileNameBase + "_heatmap_dists.png"
         imageFilePath = os.path.join(outputDir, imageFileName)
 
         if os.path.exists(imageFilePath):
@@ -1654,16 +1719,18 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # imageWidget.setPixmap(pm)
         # imageWidget.setScaledContents(True)
         # imageWidget.show()
-        csvFileName = "plate_heatmap_dists.csv"
+        csvFileName = imageFileNameBase + "_heatmap_dists.csv"
         csvFilePath = os.path.join(outputDir, csvFileName)
         pandas.DataFrame(scalarArray).to_csv(csvFilePath, index=False)
         return
 
     def makeScatterPlotWithFactors(
-        self, dataArray, factors, title, xAxisName, yAxisName, subjectID
+        self, dataArray, factors, title, xAxisName, yAxisName, subjectID, factorColors
         ):
         #Create a folder to store results
         #Creat a folder to store results
+        #factors are plates
+        #subjectID are plate margins
         plotFolderNode = slicer.mrmlScene.GetSubjectHierarchyNode()
         sceneItemID = plotFolderNode.GetSceneItemID()
         newFolder = plotFolderNode.CreateFolderItem(
@@ -1747,7 +1814,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             #             table.SetValue(factorCounter, j + 1, data[i, j])
             #         factorCounter += 1
             for j in range(dataArray.shape[1]):
-                table.SetValue(j, 0, subjectID[i][j])
+                table.SetValue(j, 0, subjectID[j])
                 table.SetValue(j, 1, j+1)
                 table.SetValue(j, 2, dataArray[i, j])
             
@@ -1768,7 +1835,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             plotSeriesNode.SetMarkerStyle(
                 slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare
             )
-            plotSeriesNode.SetUniqueColor()
+            plotSeriesNode.SetColor(factorColors[i, :])
             # Add data series to chart
             plotChartNode.AddAndObservePlotSeriesNodeID(plotSeriesNode.GetID())
 
@@ -1784,7 +1851,10 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         return plotChartNode
 
 
-    def matplotlibScatterPlot(self, dataArray, groups, title, xLabel, exportDir):
+    def matplotlibScatterPlot(self, dataArray, groups, groupColor, title, xAxisKeys, xLabel, plotExportDir):
+        # logic.matplotlibScatterPlot(dataArray=np.transpose(meanDistsArray), groups=plateKeys, groupColor=colors[:, 0:3],
+        #                             title="Mean margin distances plot", xAxisKeys=marginKeys, xLabel="Plate_margins",
+        #                             plotExportDir=plotExportDir)
         try:
           import matplotlib
         except ModuleNotFoundError:
@@ -1793,40 +1863,73 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         matplotlib.use("Agg")
           # from pylab import *
         import numpy as np
-        import os
-        import pandas    
+        import pandas
         
         # Get the number of groups
-        groupNum = dataArray.shape[0]
-        # Use a colormap (e.g., viridis) to generate n_groups distinct colors
-        cmap = plt.cm.get_cmap('viridis', groupNum)
+        plateNum = dataArray.shape[0]
+        cmap = groupColor
         
         # Plot each group with a unique color from the colormap
         # for idx, (group_name, (x, y)) in enumerate(groups.items()):
         #     plt.scatter(x, y, label=group_name, color=cmap(idx))
         plt.figure(figsize=(10, 5))
         x_values = np.arange(1, dataArray.shape[1]+1)
-        for i in range(groupNum):
-            plt.scatter(x_values, dataArray[i, ], label = groups[i], color = cmap(i)) 
+        for i in range(plateNum):
+            plt.scatter(x_values, dataArray[i, ], label = groups[i], color = cmap[i])
         
         # Add title, axis labels, and legend
-        plotTitle = "distances_plot_" + title
+        plotTitle = title
         plt.title(plotTitle)
         plt.xlabel(xLabel)
         plt.ylabel("Distances")
+        plt.xticks(ticks=range(len(xAxisKeys)), labels=xAxisKeys)
         plt.legend()
         
         imageFileName = title + ".png"
-        imageFilePath = os.path.join(exportDir, imageFileName)
+        imageFilePath = os.path.join(plotExportDir, imageFileName)
 
-        if os.path.exists(imageFilePath):
+        if os.path.exists(imageFilePadth):
             os.remove(imageFilePath)
         plt.savefig(imageFilePath, dpi=300)
         plt.close()
         
         csvFileName = title + ".csv"
-        csvFilePath = os.path.join(exportDir, csvFileName)
+        csvFilePath = os.path.join(plotExportDir, csvFileName)
         pandas.DataFrame(dataArray).to_csv(csvFilePath, index=False)
+
+
+
+    def plottingMarginDists(self, colors, marginKeys, plateKeys, meanDistsArray, compareFitExportDir, plateOrbitDistsDict):
+        # meanDistsArray need to be transposed
+        meanDistsScatterPlot = self.makeScatterPlotWithFactors(dataArray=np.transpose(meanDistsArray),
+                                                                factors=plateKeys,
+                                                                title="Mean margin distances plot",
+                                                                xAxisName="Plate margins",
+                                                                yAxisName="Distances(mm)", subjectID=marginKeys,
+                                                                factorColors=colors[:, 0:3])
+        # Switch to a Slicer layout that contains a plot view for plotwidget
+        layoutManager = slicer.app.layoutManager()
+        layoutManager.setLayout(503)
+        slicer.modules.plots.logic().ShowChartInLayout(meanDistsScatterPlot)
+        plotWidget = layoutManager.plotWidget(0)
+        plotViewNode = plotWidget.mrmlPlotViewNode()
+        plotViewNode.SetPlotChartNodeID(meanDistsScatterPlot.GetID())
+        # Save mean distance plot
+        self.matplotlibScatterPlot(dataArray=np.transpose(meanDistsArray), groups=plateKeys, groupColor=colors[:, 0:3],
+                                    title="Mean margin-orbit distances", xAxisKeys=marginKeys, xLabel="Plate_margins",
+                                    plotExportDir=compareFitExportDir)
+        # Plot each plate margin distance in allEdgeDistsArr
+        # The shape is (setsNum, variableNum, edgeLm.shape[0])
+        for i in range(len(marginKeys)):
+            lmDistFlatList = [x for marginLmDists in plateOrbitDistsDict[marginKeys[i]].values() for x in marginLmDists]
+            marginLmNumber = int(len(lmDistFlatList) / len(plateKeys))
+            marginDistsArray = np.reshape(lmDistFlatList, shape=(len(plateKeys), len(marginLmNumber)))
+
+            marginPlotTitle = marginKeys[i] + "_point_dists_to_orbit"
+            marginXAxisKeys = ["pt_" + str(x + 1) for x in list(range(marginLmNumber))]
+            self.matplotlibScatterPlot(dataArray=marginDistsArray, groups=plateKeys, groupColor=colors[:, 0:3],
+                                        tile=marginPlotTilte, xAxisKeys=marginXAxisKeys, xLabel="points",
+                                        plotExportDir=compareFitExportDir)
 
 
 
@@ -1855,6 +1958,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         projectedLMNode.SetLocked(True)
         projectedLMNode.SetFixedNumberOfControlPoints(True)
         return projectedLMNode
+
 
     def projectPointsPolydata(self, sourcePolydata, targetPolydata, originalPoints, rayLength):
         #vtk ray casting composed in SlicerMorph ALPACA
@@ -1932,6 +2036,145 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         return projectedPointData
 
 
+    def getPlateMarginNames(self, plateMarginInputRootDir):
+        plateBaseNames = [item for item in os.listdir(plateMarginInputRootDir) if
+                           os.path.isdir(os.path.join(plateMarginInputRootDir, item))]
+        plateBaseNames = sorted(plateBaseNames)
+        print(f"PlatePtsDirList contains {plateBaseNames}")
+        platePtsDir = os.path.join(plateMarginInputRootDir, plateBaseNames[0])
+        ptsFileNames = [file for file in os.listdir(platePtsDir) if file.endswith((".fscv", ".json"))]
+        ptsFileNames = sorted(ptsFileNames)
+        ptsFileNames = [name.split('.')[0] for name in ptsFileNames]
+        print(f"ptsFileNames are {ptsFileNames}")
+        plateMarginNames = []
+        for i in range(len(ptsFileNames)):
+            if ptsFileNames[i].startswith(plateBaseNames[0]):
+                marginName = ptsFileNames[i].removeprefix(plateBaseNames[0] + '_')
+                plateMarginNames.append(marginName)
+            else:
+                plateMarginNames.append(ptsFileNames[i])
+        print(f"plate margin names are {plateMarginNames}")
+        return plateMarginNames
+
+
+
+    def createPtsDict(self, fitMetricsDir, plateMarginNames, subFolderName):
+        ptsDict = {}
+        platePtsDirList = [item for item in os.listdir(fitMetricsDir) if os.path.isdir(os.path.join(fitMetricsDir, item))]
+        platePtsDirList = sorted(platePtsDirList)
+        if len(platePtsDirList) < 1:
+            logging.error('No folders for computing plate fitness. Project the landmarks or compute heatmap first')
+            return
+        for folder in platePtsDirList:
+            #Load margin pts files
+            plateName = folder
+            marginPtsDir = os.path.join(fitMetricsDir, folder, subFolderName)
+            marginPtsFiles = [file for file in os.listdir(marginPtsDir) if file.endswith(((".json", ".fcsv")))]
+            marginPtsFiles = sorted(marginPtsFiles)
+            print(f"marginPtsFiles are {marginPtsFiles}")
+            for i, file in enumerate(marginPtsFiles):
+                lmNode = slicer.util.loadMarkups(os.path.join(marginPtsDir, file))
+                lmArray = np.zeros(shape=(lmNode.GetNumberOfControlPoints(), 3))
+                point = [0, 0, 0]
+                for j in range(lmNode.GetNumberOfControlPoints()):
+                    lmNode.GetNthControlPointPosition(j, point)
+                    lmArray[j, :] = point
+                ptsSubDict = ptsDict.setdefault(plateMarginNames[i], {})
+                ptsSubDict[folder] = lmArray
+                slicer.mrmlScene.RemoveNode(lmNode)
+        dict_keys = ptsDict.keys()
+        print(dict_keys)
+        return ptsDict
+
+
+    def computeMarginProjDists(self, fitMetricsDir, marginPtsDict, projPtsDict):
+        platePtsDirList = [item for item in os.listdir(fitMetricsDir) if
+                           os.path.isdir(os.path.join(fitMetricsDir, item))]
+        platePtsDirList = sorted(platePtsDirList)
+        marginKeys = list(marginPtsDict.keys())
+        lmDistsDict = {}
+        for margin in marginKeys:
+            plateKeys = list(marginPtsDict[margin].keys())
+            for plate in plateKeys:
+                margin_i_lms = marginPtsDict[margin][plate] #k x 3 np arrary for ith plate
+                proj_i_lms = projPtsDict[margin][plate]
+                marginOrbitLmDists = np.sqrt(np.sum(np.square(margin_i_lms - proj_i_lms), axis=1))
+                lmDistsSubDict = lmDistsDict.setdefault(margin, {})
+                lmDistsSubDict[plate] = marginOrbitLmDists #Individual lm distances between margin_i and proj_i
+        print(f"the landmark coordinates of {margin} of {plate} are")
+        print(margin_i_lms)
+        print(f"the projected landmark coordinates of {margin} of {plate} are")
+        print(proj_i_lms)
+        print(f"The distances of the first margin in lmDistDict is {marginKeys[0]} {lmDistsDict[marginKeys[0]]}")
+        return lmDistsDict
+
+
+    def rankPlateMarginDists(self, plateOrbitDistsDict):
+        marginKeys = list(plateOrbitDistsDict.keys())
+        print(f'marginKeys are {marginKeys}')
+        plateKeys = list(plateOrbitDistsDict[marginKeys[0]].keys())
+        meanDistsDict = {}
+        meanDistsArray = np.zeros(shape = (len(marginKeys), len(plateKeys)))
+        for margin in marginKeys:
+            for plate in plateKeys:
+                meanDistsSubDict = meanDistsDict.setdefault(margin, {})
+                meanDistsSubDict[plate] = np.mean(plateOrbitDistsDict[margin][plate])
+                print(f'plateOrbitDistDict current is {meanDistsSubDict[plate]}')
+
+        rankArray = np.zeros(shape = (len(marginKeys), len(plateKeys)))
+        for i in range(len(marginKeys)):
+            print(f'meanDistsDict[marginKeys[i]].values() are {meanDistsDict[marginKeys[i]].values()}')
+            meanDistsArray[i, :] = list(meanDistsDict[marginKeys[i]].values()) # return mean distances of each plate along a margin i
+            rankArray[i, :] = [sorted(meanDistsArray[i, ]).index(j) for j in meanDistsArray[i, ]]
+        rankScoreSum = np.sum(rankArray, axis=0)
+        plateOverallRanks = [sorted(rankScoreSum).index(j) for j in rankScoreSum]
+        print(f'plate margin ranks are {rankArray}')
+        print(f'mean margin distance arrays are {meanDistsArray}')
+        print(f'mean distance dictionary is {meanDistsDict}')
+        print(rankScoreSum)
+        print(plateOverallRanks)
+        #
+        return meanDistsDict, meanDistsArray, rankArray, plateOverallRanks
+
+
+
+    def rankHeatmap(self, fitMetricsDir, plateKeys):
+        #Rank by heatmap
+        meanScalarArrayList = []
+        for plateName in plateKeys:
+            print(f"plate folder name is {plateName}")
+            scalarArray = []
+            scalarCSVFile = plateName + "_heatmap_dists.csv"
+            scalarCSVPath = os.path.join(fitMetricsDir, plateName, scalarCSVFile)
+            with open(scalarCSVPath, newline="") as f:
+                reader = csv.reader(f)
+                next(reader) #skip the first row, which is 0 for some reasons
+                for row in reader:
+                    scalarArray.append(float(row[0]))
+            meanScalar = np.mean(scalarArray)
+            print(f"mean scalar value is {meanScalar}")
+            meanScalarArrayList.append(meanScalar)
+
+        rankScalarList = [sorted(meanScalarArrayList).index(i) for i in meanScalarArrayList]
+        return rankScalarList, meanScalarArrayList
+
+
+
+    def createRankDf(self, plateNames, rankHeatmapList, meanHeatmapArrayList, compareFitExportDir):
+        import pandas as pd
+        rankHeatmapList = [rank+1 for rank in rankHeatmapList]
+        df = pd.DataFrame({
+            "Distance map rank":    rankHeatmapList,
+            "Distance map mean (mm)":   meanHeatmapArrayList
+        }, index=plateNames)
+
+        df = df.reset_index().rename(columns={"index": "Registered plate"})
+
+        output_path = os.path.join(compareFitExportDir, "plate_ranking.csv")
+        df.to_csv(output_path, index=False)
+
+
+
     def curveToFiducialMarkups(self, curveNode):
         pt = [0, 0, 0]
         lmNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
@@ -1939,7 +2182,6 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             curveNode.GetNthControlPointPosition(i, pt)
             lmNode.AddControlPoint(pt)
         return lmNode
-
 
 
 #
