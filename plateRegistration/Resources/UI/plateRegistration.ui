@@ -23,7 +23,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="plateRegistrationTab">
       <attribute name="title">
@@ -799,17 +799,17 @@
           <string>Visualization</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
-          <item row="3" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton_4">
+          <item row="2" column="0" colspan="3">
+           <widget class="QPushButton" name="pushButton_5">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Visualize point projection for individual plates</string>
+             <string>Visualize distance heatmap for individual plate</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="0" colspan="2">
+          <item row="4" column="0" colspan="3">
            <widget class="QPushButton" name="pushButton_3">
             <property name="enabled">
              <bool>false</bool>
@@ -838,34 +838,18 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="qMRMLSubjectHierarchyComboBox" name="SubjectHierarchyComboBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="includeItemAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="includeNodeAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="excludeItemAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-            <property name="excludeNodeAttributeNamesFilter">
-             <stringlist notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QPushButton" name="pushButton_5">
+          <item row="3" column="0" colspan="3">
+           <widget class="QPushButton" name="pushButton_4">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Visualize distance heatmap for individual plate</string>
+             <string>Visualize point projection for individual plates</string>
             </property>
            </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="ctkPathLineEdit" name="PathLineEdit"/>
           </item>
          </layout>
         </widget>
@@ -877,62 +861,19 @@
        <string>Compare fit</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_4">
-       <item row="4" column="0">
-        <widget class="QPushButton" name="compareFitPushButton">
+       <item row="2" column="0">
+        <widget class="ctkPathLineEdit" name="compareFitPathLineEdit">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-           <horstretch>160</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Compare fitness</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QPushButton" name="pushButton_6">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Show superimposed plates with distance heatmap</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QPushButton" name="pushButton_7">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Show points on the margins</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="ctkCheckBox" name="cutsomFitDirCheckBox">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+          <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="text">
-          <string>User-defined input directory</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="0">
-        <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+         <property name="filters">
+          <set>ctkPathLineEdit::Dirs</set>
          </property>
         </widget>
        </item>
@@ -950,7 +891,7 @@
          <property name="nodeTypes">
           <stringlist notr="true">
            <string>vtkMRMLModelNode</string>
-           <string>vtkMarkupsFiducialNode</string>
+           <string>vtkMRMLMarkupsFiducialNode</string>
           </stringlist>
          </property>
          <property name="hideChildNodeTypes">
@@ -970,26 +911,66 @@
          </property>
         </widget>
        </item>
+       <item row="6" column="0">
+        <widget class="QPushButton" name="showAllMarginPtsPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show points on the margins</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QPushButton" name="showAllHeatmapModelsPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show superimposed plates with distance heatmap</string>
+         </property>
+        </widget>
+       </item>
        <item row="3" column="0">
-        <widget class="ctkPathLineEdit" name="compareFitPathLineEdit">
+        <widget class="QPushButton" name="compareFitPushButton">
          <property name="enabled">
           <bool>false</bool>
          </property>
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-           <horstretch>0</horstretch>
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>160</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="filters">
-          <set>ctkPathLineEdit::Dirs</set>
+         <property name="text">
+          <string>Compare fitness</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="4" column="0">
+        <widget class="ctkCheckBox" name="showExistResultsCheckBox">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Visualize existing results</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
         <widget class="QCheckBox" name="compareMarginDistsCheckBox">
          <property name="text">
           <string>Compare distances between plate margins and orbits (Requiring points projection from margins to the reconstructed orbit)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
         </widget>
        </item>
