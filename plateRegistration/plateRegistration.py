@@ -136,12 +136,16 @@ class plateRegistrationParameterNode:
     interactionPlateModel: vtkMRMLModelNode
     initialRigidTransform: vtkMRMLTransformNode
     alignPosteriorStopTransform: vtkMRMLTransformNode
+    pStopRotationTransform: vtkMRMLTransformNode
     interactionTransformRecorder: vtkMRMLTransformNode
     allTransformNode: vtkMRMLTransformNode
     plateRegFolderName: str
     ioRootDir: str
     orbitModelRecon: vtkMRMLModelNode
     registeredPlateInfoJSON: str
+    lastInteractionTransform: vtkMRMLTransformNode
+    fullInteractionTransform: vtkMRMLTransformNode
+    plateNameUpdateReg: str
     # registeredPlateInfoDict: dict[str, tuple[vtkMRMLModelNode, vtkMRMLTransformNode]]
 
 
@@ -195,11 +199,13 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Input connections
         self.ui.inputOrbitModelSelector.connect("currentItemChanged(vtkIdType)", self.onSelectOrbitModelNode)
         self.ui.inputOrbitModelSelector.connect("currentItemChanged(vtkIdType)", self.enableInitalRegistration)
+        self.ui.inputOrbitModelSelector.connect("currentItemChanged(vtkIdType)", self.enableModifyPlateCheckBox)
         self.ui.inputOrbitModelSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.inputOrbitModelSelector.setNodeTypes(['vtkMRMLModelNode'])
         #
         self.ui.orbitFiducialSelector.connect("currentItemChanged(vtkIdType)", self.onSelectOrbitLmNode)
         self.ui.orbitFiducialSelector.connect("currentItemChanged(vtkIdType)", self.enableInitalRegistration)
+        self.ui.orbitFiducialSelector.connect("currentItemChanged(vtkIdType)", self.enableModifyPlateCheckBox)
         self.ui.orbitFiducialSelector.setMRMLScene(slicer.mrmlScene)
         self.ui.orbitFiducialSelector.setNodeTypes(['vtkMRMLMarkupsFiducialNode'])
         #
@@ -214,10 +220,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateFiducialSelector.setNodeTypes(['vtkMRMLMarkupsFiducialNode'])
 
         self.ui.placeOrbitLmPushButton.connect('clicked(bool)', self.onPlaceOrbitLmPushButton)
-
         self.ui.placePlateLmPushButton.connect('clicked(bool)', self.onPlacePlateLmPushButton)
 
+        #Update existing plate registration
         self.ui.modifyPlateCheckBox.connect('toggled(bool)', self.onModifyPlateCheckBox)
+        self.ui.modifyPlatePathLineEdit.connect('currentPathChanged(QString)', self.onModifyPlatePathLineEdit)
+        self.ui.loadPlateRegPushButton.connect('clicked(bool)', self.onLoadPlateRegPushButton)
 
         #Initial registration connections
         self.ui.initialRegistrationPushButton.connect('clicked(bool)', self.onInitialRegistrationPushButton)
@@ -241,7 +249,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.saveAllRegPathLineEdit.connect("currentPathChanged(QString)", self.onSaveAllRegPathLineEdit)
         self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
 
-        #Plate fit metrics tab connections
+        #Plate fit metrics tab connection
         self.ui.platePtsBatchPathLineEdit.connect("currentPathChanged(QString)", self.onEnablePtsProjection)
         self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onEnablePtsProjection)
         self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onVisualizeOrbitRecon)
@@ -249,7 +257,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.orbitReconShComboBox.setNodeTypes(['vtkMRMLModelNode'])
         self.ui.projectPtsBatchScenePushButton.connect('clicked(bool)', self.onProjectPtsBatchScene)
         self.ui.computeHeatmapPushButton.connect('clicked(bool)', self.onPlateHeatmap)
-
+        self.ui.visuPlateMetricPathLineEdit.connect("currentPathChanged(QString)", self.onVisuPlateMetricPathLineEdit)
+        self.ui.visuOnePlatePushButton.connect('clicked(bool)', self.onVisuOnePlatePushButton)
+        self.ui.visuPtsPushButton.connect('clicked(bool)', self.onVisuPtsPushButton)
 
         #Compare fit tab connections
         self.ui.compareFitSHTreeView.setMRMLScene(slicer.mrmlScene)
@@ -445,10 +455,22 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
 
 
+    def onVisuPlateMetricPathLineEdit(self):
+        if self.ui.visuPlateMetricPathLineEdit.currentPath:
+            self.ui.visuOnePlatePushButton.enabled = True
+            self.ui.visuPtsPushButton.enabled = True
+        else:
+            self.ui.visuOnePlatePushButton.enabled = False
+            self.ui.visuPtsPushButton.enabled = False
+
+
     def onShowExistResultsCheckBox(self):
         if self.ui.showExistResultsCheckBox.isChecked():
             self.ui.showAllHeatmapModelsPushButton.enabled = True
             self.ui.showAllMarginPtsPushButton.enabled = True
+        else:
+            self.ui.showAllHeatmapModelsPushButton.enabled = False
+            self.ui.showAllMarginPtsPushButton.enabled = False
 
     def onPlaceOrbitLmPushButton(self):
         logic = plateRegistrationLogic()
@@ -472,6 +494,135 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateFiducialSelector.setCurrentItem(originalPlateLmNodeId)
         logic.placeLm(self._parameterNode.originalPlateLm)
 
+
+    def enableModifyPlateCheckBox(self):
+        self.ui.modifyPlateCheckBox.enabled = bool(self.ui.inputOrbitModelSelector.currentItem() and self.ui.orbitFiducialSelector.currentItem())
+
+    def onModifyPlateCheckBox(self):
+        if self.ui.modifyPlateCheckBox.isChecked():
+            self.ui.plateModelSelector.enabled = False
+            self.ui.plateFiducialSelector.enabled = False
+            self.ui.plateModelSelector.clearSelection()
+            self.ui.plateFiducialSelector.clearSelection()
+            self.ui.modifyPlatePathLineEdit.enabled = True
+        else:
+            self.ui.plateModelSelector.enabled = True
+            self.ui.plateFiducialSelector.enabled = True
+            self.ui.modifyPlatePathLineEdit.enabled = False
+            self.ui.modifyPlatePathLineEdit.currentPath = ''
+            self.ui.modifyPlatePathLineEdit.enabled = False
+            self.ui.loadPlateRegPushButton.enabled = False
+
+    def onModifyPlatePathLineEdit(self):
+        if self.ui.modifyPlatePathLineEdit.currentPath:
+            self.ui.loadPlateRegPushButton.enabled = True
+        else:
+            self.ui.loadPlateRegPushButton.enabled = False
+
+
+    def onLoadPlateRegPushButton(self):
+        try:
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(False)
+        except:
+            pass
+        currentFolderPath = self.ui.modifyPlatePathLineEdit.currentPath
+        currentFolderName = os.path.basename(currentFolderPath)
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        sceneItemID = shNode.GetSceneItemID()
+
+        logfile = "plate_registration.log"
+        logfilepath = os.path.join(currentFolderPath, logfile)
+        with open(logfilepath, "r") as f:
+            lines = [L.strip() for L in f]
+
+        finalPlateFile = lines[0].split(":", 1)[1].strip()
+        plateBaseName = finalPlateFile.split(".")[0].strip().removesuffix('_final')
+        self._parameterNode.plateNameUpdateReg = plateBaseName
+        finalPlatePath = os.path.join(currentFolderPath, finalPlateFile)
+        finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
+        finalPlateModelNode.SetName(finalPlateFile.split(".")[0].strip() + "_previous")
+        self._parameterNode.rigidRegisteredPlateModel = finalPlateModelNode
+
+        plateModelItem = shNode.GetItemByDataNode(self._parameterNode.rigidRegisteredPlateModel)
+        dateTimeStamp = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+        self._parameterNode.plateRegFolderName = self._parameterNode.plateNameUpdateReg + "_" + dateTimeStamp
+        self.plateRegistrationFolder = shNode.CreateFolderItem(
+            sceneItemID, self._parameterNode.plateRegFolderName
+        )
+        shNode.SetItemParent(plateModelItem, self.plateRegistrationFolder)
+
+        print(lines[4])
+        rigidPlateFile = lines[4].split(":", 1)[1].strip()
+        rigidPlatePath = os.path.join(currentFolderPath, rigidPlateFile)
+        rigidPlateModelNode = slicer.util.loadModel(rigidPlatePath)
+        rigidPlateModelNode.SetName(rigidPlateFile.split(".")[0].strip())
+        rigidTransformItem = shNode.GetItemByDataNode(rigidPlateModelNode)
+        shNode.SetItemParent(rigidTransformItem, self.plateRegistrationFolder)
+        rigidPlateModelNode.GetDisplayNode().SetVisibility(False)
+
+        rigidLmFile = lines[5].split(":", 1)[1].strip()
+        rigidLmPath = os.path.join(currentFolderPath, rigidLmFile)
+
+        #
+        print(f"Current folder:    {currentFolderPath}")
+        print(f"Rigid‐LM filepath: {rigidLmPath!r}")
+        print(" Exists on disk?   ", os.path.exists(rigidLmPath))
+        print(" File size (bytes):", os.path.getsize(rigidLmPath) if os.path.exists(rigidLmPath) else "N/A")
+
+        rigidLmNode = slicer.util.loadMarkups(rigidLmPath)
+        rigidLmNode.SetName(rigidLmFile.split(".")[0].strip())
+        rigidLmItem = shNode.GetItemByDataNode(rigidLmNode)
+        shNode.SetItemParent(rigidLmItem, self.plateRegistrationFolder)
+        self._parameterNode.registeredPlateLm = rigidLmNode
+        rigidLmNode.GetDisplayNode().SetVisibility(False)
+
+        inititialTransformFile = lines[6].split(":", 1)[1].strip()
+        inititialTransformPath = os.path.join(currentFolderPath, inititialTransformFile)
+        inititialTransformNode = slicer.util.loadTransform(inititialTransformPath)
+        inititialTransformNode.SetName(inititialTransformFile.split(".")[0].strip())
+        self._parameterNode.initialRigidTransform = inititialTransformNode
+        initialRigidTransformItem = shNode.GetItemByDataNode(self._parameterNode.initialRigidTransform)
+        shNode.SetItemParent(initialRigidTransformItem, self.plateRegistrationFolder)
+
+        alignPStopTransformFile = lines[7].split(":", 1)[1].strip()
+        alignPStopTransformPath = os.path.join(currentFolderPath, alignPStopTransformFile)
+        alignPStopTransformNode = slicer.util.loadTransform(alignPStopTransformPath)
+        alignPStopTransformNode.SetName(alignPStopTransformFile.split(".")[0].strip())
+        self._parameterNode.alignPosteriorStopTransform = alignPStopTransformNode
+        alignPStopTransformItem = shNode.GetItemByDataNode(self._parameterNode.alignPosteriorStopTransform)
+        shNode.SetItemParent(alignPStopTransformItem, self.plateRegistrationFolder)
+
+        pStopRotationTransformFile = lines[8].split(":", 1)[1].strip()
+        pStopRotationTransformPath = os.path.join(currentFolderPath, pStopRotationTransformFile)
+        pStopRotationTransformNode = slicer.util.loadTransform(pStopRotationTransformPath)
+        pStopRotationTransformNode.SetName(pStopRotationTransformFile.split(".")[0].strip())
+        self._parameterNode.pStopRotationTransform = pStopRotationTransformNode
+        pStopRotationTransformItem = shNode.GetItemByDataNode(self._parameterNode.pStopRotationTransform)
+        shNode.SetItemParent(pStopRotationTransformItem, self.plateRegistrationFolder)
+
+        oldInteractionTransformFile = lines[9].split(":", 1)[1].strip()
+        oldInteractionTransformPath = os.path.join(currentFolderPath, oldInteractionTransformFile)
+        oldInteractionTransformNode = slicer.util.loadTransform(oldInteractionTransformPath)
+        oldInteractionTransformNode.SetName(oldInteractionTransformFile.split(".")[0].strip() + "_previous")
+        self._parameterNode.lastInteractionTransform = oldInteractionTransformNode
+        oldInteractionTransformItem = shNode.GetItemByDataNode(self._parameterNode.lastInteractionTransform)
+        shNode.SetItemParent(oldInteractionTransformItem, self.plateRegistrationFolder)
+
+
+
+        self.ui.inputOrbitModelSelector.enabled = False
+        self.ui.orbitFiducialSelector.enabled = False
+        self.ui.plateModelSelector.enabled = False
+        self.ui.plateFiducialSelector.enabled = False
+        self.ui.initialRegistrationPushButton.enabled = False
+        self.ui.placeOrbitLmPushButton.enabled = False
+        self.ui.placePlateLmPushButton.enabled = False
+        self.ui.modifyPlateCheckBox.enabled = False
+        self.ui.modifyPlatePathLineEdit.enabled = False
+        self.ui.loadPlateRegPushButton.enabled = False
+
+        self.ui.interactionTransformCheckbox.enabled = True
+
     def onInitialRegistrationPushButton(self):
         logic = plateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
@@ -483,7 +634,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.originalPlateLm)
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
         self._parameterNode.registeredPlateLm = shNode.GetItemDataNode(clonedItemID)
-        self._parameterNode.registeredPlateLm.SetName(self._parameterNode.originalPlateLm.GetName() + '_rigid_registered')
+        # self._parameterNode.registeredPlateLm.SetName(self._parameterNode.originalPlateLm.GetName() + '_rigid_registered')
+        self._parameterNode.registeredPlateLm.SetName(
+            self._parameterNode.originalPlateModel.GetName() + '_lm_rigid_registered')
         #
         self._parameterNode.registeredPlateLm.SetAndObserveTransformNodeID(self._parameterNode.initialRigidTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.registeredPlateLm)
@@ -531,6 +684,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.placePlateLmPushButton.enabled = False
         self.ui.modifyPlateCheckBox.enabled = False
         self.ui.modifyPlatePathLineEdit.enabled = False
+        self.ui.loadPlateRegPushButton.enabled = False
 
 
     def onRotation_p_stop_pushButton(self):
@@ -568,8 +722,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.orbitLm.SetNthControlPointLocked(1, True)        #
 
 
-    def onModifyPlateCheckBox(self):
-        if self.ui.modifyPlateCheckBox
 
 
     def onInteractionTransform(self):
@@ -585,7 +737,18 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             #
             self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
             #Set center to posterior stop, which is the second lm in the orbit Lm; change it to user input later
-            self.interactionTransformNode.SetCenterOfTransformation(self._parameterNode.orbitLm.GetNthControlPointPosition(1))
+            if self.ui.modifyPlateCheckBox.isChecked():
+                shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+                itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
+                clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+                registeredPlateLm_clone = shNode.GetItemDataNode(clonedItemID)
+                registeredPlateLm_clone.SetAndObserveTransformNodeID(self._parameterNode.lastInteractionTransform.GetID())
+                slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlateLm_clone)
+                self.interactionTransformNode.SetCenterOfTransformation(
+                    registeredPlateLm_clone.GetNthControlPointPosition(1))
+                slicer.mrmlScene.RemoveNode(registeredPlateLm_clone)
+            else:
+                self.interactionTransformNode.SetCenterOfTransformation(self._parameterNode.orbitLm.GetNthControlPointPosition(1))
             #
             self._parameterNode.interactionTransformRecorder = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interactionTransformRecorder") # record the interaction transform node
 
@@ -607,7 +770,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             plateRemeshNode.AddDefaultStorageNode()
             surfaceToolboxLogic.remesh(inputModel = self._parameterNode.rigidRegisteredPlateModel, outputModel=plateRemeshNode, subdivide=0, clusters=10000)
             self._parameterNode.interactionPlateModel = plateRemeshNode
-            self._parameterNode.interactionPlateModel.SetName(self._parameterNode.originalPlateModel.GetName() + "_interactive_transformed")
+            if self.ui.modifyPlateCheckBox.isChecked():
+                self._parameterNode.interactionPlateModel.SetName(self._parameterNode.plateNameUpdateReg + "_interactive_transformed")
+            else:
+                self._parameterNode.interactionPlateModel.SetName(self._parameterNode.originalPlateModel.GetName() + "_interactive_transformed")
             self._parameterNode.rigidRegisteredPlateModel.GetDisplayNode().SetVisibility(False)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility2D(True)
@@ -636,6 +802,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.plateRoiNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
             self.plateRoiNode.GetDisplayNode().SetVisibility(False)  
             #Add to output folder
+            self.folderNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
             plateRemeshItem = self.folderNode.GetItemByDataNode(self._parameterNode.interactionPlateModel)
             self.folderNode.SetItemParent(plateRemeshItem, self.plateRegistrationFolder)
             interactionTransformItem = self.folderNode.GetItemByDataNode(self.interactionTransformNode)
@@ -653,6 +820,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             observerTag1 = self.interactionTransformNode.AddObserver(slicer.vtkMRMLTransformNode.TransformModifiedEvent, self.executeTimer)
         else:
             pass
+
+        self.ui.resetAllPushButton.enabled = True
+        self.ui.finalizePlateRegistrationPushButton.enabled = True
 
     def timerFunction(self):
         self.timer.start()
@@ -672,11 +842,17 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             slicer.mrmlScene.RemoveNode(self.intersectionModel)
         except:
             pass
+        try:
+            colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+                self._parameterNode.interactionPlateModel)
+            colorLegendDisplayNode.SetVisibility(False)
+        except:
+            pass
         logic = plateRegistrationLogic()
         print("timeout")
         if self.ui.instantCollisionDetectionCheckBox.isChecked():
             # Computer instant collision number of points
-            self.ui.collisionInfoBox.clear
+            self.ui.collisionInfoBox.clear()
             collisionFlag, numberOfCollisions = logic.collision_detection(self._parameterNode.interactionPlateModel, self._parameterNode.fractureOrbitModel)
             if collisionFlag == False:
                 self.ui.collisionInfoBox.insertPlainText(
@@ -686,7 +862,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                 self.ui.collisionInfoBox.insertPlainText(f"{numberOfCollisions} collision points detected. This is approximately {numberOfCollisions/100} % of all points in the plate. \n")
                 print(f"{numberOfCollisions} collision points detected. This is approximately {numberOfCollisions/10000}% of points in the plate.")
         
-        elif self.ui.instantIntersectionMarkerCheckBox.isChecked():
+        if self.ui.instantIntersectionMarkerCheckBox.isChecked():
             #
             #Instant probe model by volume for marking intersection
             try:
@@ -815,7 +991,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #
         collisionFlag, numberOfCollisions = logic.collision_detection(plateRemeshNode_clone, self._parameterNode.fractureOrbitModel)
         # output information
-        self.ui.collisionInfoBox.clear
+        self.ui.collisionInfoBox.clear()
         if collisionFlag == True:
             self.ui.collisionInfoBox.insertPlainText(
                 f":: Collision between model and plate detected. There are {numberOfCollisions} collision points. This is approximately {numberOfCollisions/100} % of points in the plate. \n"
@@ -844,12 +1020,15 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         plate_distanceMap2, self._parameterNode.interactionPlateModel = logic.heatmap(templateMesh=self._parameterNode.interactionPlateModel,
                                                                  currentMesh=self._parameterNode.fractureOrbitModel)
         d = self._parameterNode.interactionPlateModel.GetDisplayNode()
+        d.SetVisibility(True)
+        d.SetVisibility2D(True)
         d.SetScalarVisibility(True)
         d.SetActiveScalarName('Distance')
         colorTableNode = slicer.util.getNode('RedGreenBlue')
         d.SetAndObserveColorNodeID(colorTableNode.GetID())
         d.SetScalarRangeFlagFromString('Manual')
         d.SetScalarRange(0, 5)
+
 
         # Clone current interaction transform and inverse it (hardened in paint_model_by_volume)
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
@@ -865,21 +1044,32 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.interactionPlateModel.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
         slicer.mrmlScene.RemoveNode(interactionTransform_inverse)
 
+        #Display color legend
+        colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(self._parameterNode.interactionPlateModel)
+        colorLegendDisplayNode.SetVisibility(True)
+        labelFormat = "%4.1f mm"
+        colorLegendDisplayNode.SetLabelFormat(labelFormat)
+
 
 
 
     def onRealignHandleToPStopButton(self):
-        # Clone orbit lm
+        # Clone plate lm
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.orbitLm)
+        itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
-        orbitLmCloneNode = shNode.GetItemDataNode(clonedItemID)
-        orbitLmCloneNode.SetName('orbit_lm_cloned')
-        orbitLmCloneNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
-        slicer.vtkSlicerTransformLogic().hardenTransform(orbitLmCloneNode)
+        plateLmCloneNode = shNode.GetItemDataNode(clonedItemID)
+        plateLmCloneNode.SetName('registered_plate_lm_cloned')
+
+        if self.ui.modifyPlateCheckBox.isChecked():
+            plateLmCloneNode.SetAndObserveTransformNodeID(self._parameterNode.lastInteractionTransform.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(plateLmCloneNode)
+
+        plateLmCloneNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(plateLmCloneNode)
         
         p_stop_source = [0, 0, 0]
-        orbitLmCloneNode.GetNthControlPointPosition(1, p_stop_source)
+        plateLmCloneNode.GetNthControlPointPosition(1, p_stop_source)
         
         p_stop_target = [0, 0, 0 ]
         self._parameterNode.orbitLm.GetNthControlPointPosition(1, p_stop_target)
@@ -897,7 +1087,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         slicer.vtkSlicerTransformLogic().hardenTransform(self.interactionTransformNode)
         
         slicer.mrmlScene.RemoveNode(realignPStopTransformNode)
-        slicer.mrmlScene.RemoveNode(orbitLmCloneNode)
+        slicer.mrmlScene.RemoveNode(plateLmCloneNode)
 
 
 
@@ -908,12 +1098,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onResetAllPushButton(self):
-        #
-        self.ui.inputOrbitModelSelector.enabled=True
-        self.ui.orbitFiducialSelector.enabled=True
-        self.ui.plateModelSelector.enabled=True
-        self.ui.plateFiducialSelector.enabled=True
-        #
         self.ui.interactionTransformCheckbox.checked=0
         self.ui.interactionTransformCheckbox.enabled=False
         self.ui.instantCollisionDetectionCheckBox.checked=0
@@ -927,6 +1111,18 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.resetAllPushButton.enabled=False
         self.ui.finalizePlateRegistrationPushButton.enabled = False
         self.ui.placeOrbitLmPushButton.enabled = False
+        self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
+        self.ui.currentRegResultsPathLineEdit.enabled = False
+        self.onCurrentRegResultsPathLineEdit()
+        self.ui.modifyPlateCheckBox.enabled = False
+        self.ui.modifyPlateCheckBox.checked = 0
+        #
+        self.ui.inputOrbitModelSelector.enabled=True
+        self.ui.orbitFiducialSelector.enabled=True
+        self.ui.plateModelSelector.enabled=True
+        self.ui.plateFiducialSelector.enabled=True
+        #
+
         #
         self._parameterNode.orbitLm.SetNthControlPointVisibility(0, True)
         self._parameterNode.orbitLm.SetNthControlPointVisibility(1, True)
@@ -934,8 +1130,11 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.orbitLm.GetDisplayNode().SetVisibility(True)
         self._parameterNode.orbitLm.SetNthControlPointLocked(1, False)
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
-        self._parameterNode.originalPlateLm.GetDisplayNode().SetVisibility(True)
-        self._parameterNode.originalPlateModel.GetDisplayNode().SetVisibility(True)
+        try:
+            self._parameterNode.originalPlateLm.GetDisplayNode().SetVisibility(True)
+            self._parameterNode.originalPlateModel.GetDisplayNode().SetVisibility(True)
+        except:
+            pass
         # # Loop through children and remove each data node
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         children = vtk.vtkIdList()
@@ -954,15 +1153,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateModelSelector.clearSelection()
         self.ui.plateFiducialSelector.clearSelection()
         #
-        self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
-        self.ui.currentRegResultsPathLineEdit.enabled = False
-        self.onCurrentRegResultsPathLineEdit()
-        self.ui.modifyPlateCheckBox.enabled = False
-        self.ui.modifyPlateCheckBox.checked = 0
 
 
 
     def onFinalizePlateRegistrationPushButton(self):
+        #Update folder Name
+
         # Get display node IDs
         logic = plateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
@@ -976,9 +1172,14 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         orbitModelId = shNode.GetItemByDataNode(self._parameterNode.fractureOrbitModel)
         #
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
-        self._parameterNode.interactionPlateModel.SetName(
-            self._parameterNode.originalPlateModel.GetName() + "_final")
-        allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
+        if self.ui.modifyPlateCheckBox.isChecked():
+            self._parameterNode.interactionPlateModel.SetName(
+                self._parameterNode.plateNameUpdateReg + "_final")
+            allTransformNodeName = "allTransform_" + self._parameterNode.plateNameUpdateReg
+        else:
+            self._parameterNode.interactionPlateModel.SetName(
+                self._parameterNode.originalPlateModel.GetName() + "_final")
+            allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
         self._parameterNode.allTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', allTransformNodeName)
         try:
             self._parameterNode.allTransformNode.SetAndObserveTransformNodeID(self._parameterNode.initialRigidTransform.GetID())
@@ -987,8 +1188,26 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.allTransformNode)
             self._parameterNode.allTransformNode.SetAndObserveTransformNodeID(self._parameterNode.pStopRotationTransform.GetID())
             slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.allTransformNode)
-            self._parameterNode.allTransformNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
-            slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.allTransformNode)
+            if self.ui.modifyPlateCheckBox.isChecked():
+                self.interactionTransformNode.SetName('interaction_transform' + "_updated")
+                print(self.interactionTransformNode.GetName())
+                #create a new transformnode that combines old and updated interaction_transform
+                itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.lastInteractionTransform)
+                clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+                self._parameterNode.fullInteractionTransform = shNode.GetItemDataNode(clonedItemID)
+                self._parameterNode.fullInteractionTransform.SetName('interaction_transform')
+                self._parameterNode.fullInteractionTransform.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+                slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.fullInteractionTransform)
+                #Add to folder
+                fullInterTransformNodeItem = self.folderNode.GetItemByDataNode(self._parameterNode.fullInteractionTransform)
+                self.folderNode.SetItemParent(fullInterTransformNodeItem, self.plateRegistrationFolder)
+                #
+                self._parameterNode.allTransformNode.SetAndObserveTransformNodeID(self._parameterNode.fullInteractionTransform.GetID())
+                slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.allTransformNode)
+            else:
+                print("not updating existing registration")
+                self._parameterNode.allTransformNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+                slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.allTransformNode)
         except (AttributeError, ValueError, TypeError):
             pass
         allTransformNodeItem = self.folderNode.GetItemByDataNode(self._parameterNode.allTransformNode)
@@ -1015,6 +1234,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.resetToLastStepButton.enabled=False
         self.ui.resetAllPushButton.enabled=False
         self.ui.finalizePlateRegistrationPushButton.enabled = False
+        self.ui.modifyPlateCheckBox.enabled = False
+        self.ui.modifyPlateCheckBox.checked = 0
+
         self.ui.currentRegResultsPathLineEdit.enabled = True
         self.ui.saveAllRegPathLineEdit.enabled = True
         if self.ui.saveAllRegPathLineEdit.currentPath:
@@ -1058,9 +1280,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.rigidRegisteredPlateModel = shNode.GetItemDataNode(rigidPlateModelId)
             self._parameterNode.rigidRegisteredPlateModel.GetDisplayNode().SetVisibility(True)
 
-        self.ui.modifyPlateCheckBox.enabled = False
-        self.ui.modifyPlateCheckBox.checked = 0
-
 
 
     def onSaveCurrentRegPushButton(self):
@@ -1073,13 +1292,19 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
         self.onCurrentRegResultsPathLineEdit() #disable save button
         self.ui.currentRegResultsPathLineEdit.enabled = False
-        logFileName = self._parameterNode.plateRegFolderName + ".log"
+        logFileName = "plate_registration.log"
         logFilePath = os.path.join(outputFolder, logFileName)
         with open(logFilePath, "w") as f:
             f.write("final registered plate file name: " + self._parameterNode.interactionPlateModel.GetName() + ".ply" + "\n")
             f.write("final registered plate MRML node ID: " + self._parameterNode.interactionPlateModel.GetID() + "\n")
             f.write("full transoform node file name: " + self._parameterNode.allTransformNode.GetName() + ".h5" + "\n")
             f.write("full transform node MRML node ID: " + self._parameterNode.allTransformNode.GetID() + "\n")
+            f.write("rigid registered plate: " + self._parameterNode.rigidRegisteredPlateModel.GetName() + ".ply" + "\n")
+            f.write("rigid registered plate landmark node: " + self._parameterNode.registeredPlateLm.GetName() + ".mrk.json" + "\n")
+            f.write("initial fiducial rigid transform: " + self._parameterNode.initialRigidTransform.GetName() + ".h5" + "\n")
+            f.write("align posterior stop transform: " + self._parameterNode.alignPosteriorStopTransform.GetName() + ".h5" + "\n")
+            f.write("posterior stop rotation rigid transform: " + self._parameterNode.pStopRotationTransform.GetName() + ".h5" + "\n")
+            f.write("interaction transform: " +  "interaction_transform.h5" + "\n")
 
 
     def onSaveAllRegPushButton(self):
@@ -1100,8 +1325,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             currentFoldeItemId = registeredPlateInfoDict[currentFolderName]["folderItemID"]
             slicer.app.ioManager().addDefaultStorageNodes()
             logic.exportCurrentFolder(currentFoldeItemId, outputDir)
-            logFileName = currentFolderName+ ".log"
+            logFileName = "plate_registration.log"
             logFilePath = os.path.join(outputDir, logFileName)
+            # logFilePath = os.path.join(outputFolder, logFileName)
+            rigidModelName = interactionPlateModelNode.GetName().removesuffix('_final') + '_rigid_registered'
+            rigidLmName = interactionPlateModelNode.GetName().removesuffix('_final') + '_lm_rigid_registered'
+
             with open(logFilePath, "w") as f:
                 f.write(
                     "final registered plate file name: " + interactionPlateModelNode.GetName() + ".ply" + "\n")
@@ -1109,7 +1338,18 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                     "final registered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
                 f.write(
                     "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
-                f.write("full transform node MRML node ID: " + fullTransformNode.GetID() + "\n")
+                f.write("full transform node MRML node ID: " + fullTransformNodeID + "\n")
+                f.write(
+                    "rigid registered plate: " + rigidModelName + ".ply" + "\n")
+                f.write(
+                    "rigid registered plate landmark node: " + rigidLmName + ".mrk.json" + "\n")
+                f.write(
+                    "initial fiducial rigid transform: " + self._parameterNode.initialRigidTransform.GetName() + ".h5" + "\n")
+                f.write(
+                    "align posterior stop transform: " + self._parameterNode.alignPosteriorStopTransform.GetName() + ".h5" + "\n")
+                f.write(
+                    "posterior stop rotation rigid transform: " + self._parameterNode.pStopRotationTransform.GetName() + ".h5" + "\n")
+                f.write("interaction transform: " +  "interaction_transform.h5" + "\n")
         ptsForProjectionDir = os.path.join(allOutRoot, 'points_for_projection')
         os.makedirs(ptsForProjectionDir, exist_ok=True)
         # os.makedirs(os.path.join(allOutDir, 'plate_fit_output'), exist_ok=True)
@@ -1132,6 +1372,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             for name in os.listdir(plateMarginInputRootDir)
             if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
         ]
+        print(f"base names for point projection are {plateBaseNames}\n")
         # print(f'plate base names from the raw margin pts folder are {plateBaseNames}')
         # registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
         plateRegFolders = [folder for folder in os.listdir(plateRegDir) if os.path.isdir(os.path.join(plateRegDir, folder))]
@@ -1140,12 +1381,13 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                 if not currentPlateFolderName.startswith(baseName):
                     continue
                 else:
+                    print(f"current plate folder for point projection is {currentPlateFolderName}\n")
                     rawPlateMarginCurveDir = os.path.join(plateMarginInputRootDir, baseName)
                     # finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
                     # finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
                     # fullTransformNodeID = registeredPlateInfoDict[currentPlateFolderName]["fullTransformNodeID"]
                     # fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
-                    logfile = currentPlateFolderName + ".log"
+                    logfile = "plate_registration.log"
                     logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
                     with open(logfilepath, "r") as f:
                         lines = [L.strip() for L in f]
@@ -1154,10 +1396,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                     finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
                     fullTransformFile = lines[2].split(":", 1)[1].strip()
                     fullTransformPath = os.path.join(plateRegDir, currentPlateFolderName, fullTransformFile)
+                    print(f"current full transform path for point proj is {fullTransformPath} and {finalPlatePath}\n")
                     fullTransformNode = slicer.util.loadTransform(fullTransformPath)
 
                     for file in os.listdir(rawPlateMarginCurveDir):
                         if file.endswith((".json", ".fcsv")):
+                            #
                             plateMarginCurveNode = slicer.util.loadMarkups(os.path.join(rawPlateMarginCurveDir, file))
                             plateMarginCurveNode.SetName(file.split('.')[0])
                             plateMarginCurveNode.SetAndObserveTransformNodeID(fullTransformNode.GetID())
@@ -1197,8 +1441,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                             slicer.mrmlScene.RemoveNode(plateMarginCurveNode)
                             slicer.mrmlScene.RemoveNode(plateMarginPtsNode)
                             slicer.mrmlScene.RemoveNode(projectedPlateLMNode)
-                        slicer.mrmlScnee.RemoveNode(finalPlateModelNode)
-                        slicer.mrmlScene.RemoveNode(fullTransformNode)
+                    slicer.mrmlScene.RemoveNode(finalPlateModelNode)
+                    slicer.mrmlScene.RemoveNode(fullTransformNode)
         self.ui.compareFitPathLineEdit.currentPath = outputRootDir
         self.ui.compareMarginDistsCheckBox.checked = 1
 
@@ -1218,14 +1462,25 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             for name in os.listdir(plateMarginInputRootDir)
             if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
         ]
-        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
-        for currentPlateFolderName in registeredPlateInfoDict.keys():
+        plateRegDir = os.path.join(rootDir, 'plate_registration_results')
+        # registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+        plateRegFolders = [folder for folder in os.listdir(plateRegDir) if
+                           os.path.isdir(os.path.join(plateRegDir, folder))]
+        for currentPlateFolderName in plateRegFolders:
             for baseName in plateBaseNames:
                 if not currentPlateFolderName.startswith(baseName):
                     continue
                 else:
-                    finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
-                    finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
+                    # finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
+                    # finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
+                    logfile = "plate_registration.log"
+                    logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
+                    with open(logfilepath, "r") as f:
+                        lines = [L.strip() for L in f]
+                    finalPlateFile = lines[0].split(":", 1)[1].strip()
+                    finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
+                    finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
+
                     orbitReconModelNode = self._parameterNode.orbitModelRecon
                     plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
                     #
@@ -1239,6 +1494,14 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                     #Save scalar as csv & histogram
                     scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
                     scalarArray = np.abs(scalarArray)
+
+                    # Display color legend
+                    colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+                        finalPlateModelNode)
+                    colorLegendDisplayNode.SetVisibility(True)
+                    labelFormat = "%4.1f mm"
+                    colorLegendDisplayNode.SetLabelFormat(labelFormat)
+                    #
                     outputDir = os.path.join(outputRootDir, currentPlateFolderName)
                     os.makedirs(outputDir, exist_ok=True)
                     logic.plotScalarHistogram(scalarArray, outputDir, baseName, currentPlateFolderName)
@@ -1252,8 +1515,69 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
                     plateVTKPath = os.path.join(outputDir, plateVTKName)
                     slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
                     self.ui.compareFitPathLineEdit.currentPath = outputRootDir
+                    slicer.mrmlScene.RemoveNode(finalPlateModelNode)
 
 
+
+    def onVisuOnePlatePushButton(self):
+        plateFolderPath = self.ui.visuPlateMetricPathLineEdit.currentPath
+        plateBaseName = os.path.basename(plateFolderPath)
+        plateFile = plateBaseName + '_heatmap.vtk'
+        plateScalarModelPath = os.path.join(plateFolderPath, plateFile)
+        plateScalarModelNode = slicer.util.loadModel(plateScalarModelPath)
+        plateScalarModelNode.SetName(plateBaseName + '_heatmap')
+        d = plateScalarModelNode.GetDisplayNode()
+        d.SetVisibility(True)
+        d.SetVisibility2D(True)
+        d.SetScalarVisibility(True)
+        d.SetActiveScalarName('Distance')
+        colorTableNode = slicer.util.getNode('RedGreenBlue')
+        d.SetAndObserveColorNodeID(colorTableNode.GetID())
+        d.SetScalarRangeFlagFromString('Manual')
+        d.SetScalarRange(0, 5)
+        # Display color legend
+        colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+            plateScalarModelNode)
+        colorLegendDisplayNode.SetVisibility(True)
+        labelFormat = "%4.1f mm"
+        heatmapTitle = "plate_to_orbit_distance_heatmap\n"
+        colorLegendDisplayNode.SetTitleText(heatmapTitle)
+        colorLegendDisplayNode.SetLabelFormat(labelFormat)
+
+
+    def onVisuPtsPushButton(self):
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        plateFolderPath = self.ui.visuPlateMetricPathLineEdit.currentPath
+        plateBaseName = os.path.basename(plateFolderPath)
+        marginPtsDir = os.path.join(plateFolderPath, 'points_on_the_plate')
+        marginPtsFiles = [file for file in os.listdir(marginPtsDir) if file.endswith((".json", ".fcsv"))]
+        #Create a folder to store pts
+        sceneItemID = shNode.GetSceneItemID()
+        marginPtsFolderName = plateBaseName + '_points_on_the_plate'
+        marginPtsFolderItem = shNode.CreateFolderItem(
+                sceneItemID, marginPtsFolderName
+            )
+        for file in marginPtsFiles:
+            ptsNode = slicer.util.loadMarkups(os.path.join(marginPtsDir, file))
+            ptsNode.GetDisplayNode().SetVisibility(True)
+            ptsNode.SetName(file.split('.')[0])
+            ptsNodeItem = shNode.GetItemByDataNode(ptsNode)
+            shNode.SetItemParent(ptsNodeItem, marginPtsFolderItem)
+
+        #Load projected pts
+        projPtsDir = os.path.join(plateFolderPath, 'points_projected_to_orbit')
+        projPtsFiles = [file for file in os.listdir(projPtsDir) if file.endswith((".json", ".fcsv"))]
+        #Create folder for projected pts
+        projPtsFolderName = plateBaseName + '_points_projected_to_orbit'
+        projPtsFolderItem = shNode.CreateFolderItem(
+                sceneItemID, projPtsFolderName
+            )
+        for file in projPtsFiles:
+            ptsNode = slicer.util.loadMarkups(os.path.join(projPtsDir, file))
+            ptsNode.GetDisplayNode().SetVisibility(True)
+            ptsNode.SetName(file.split('.')[0])
+            ptsNodeItem = shNode.GetItemByDataNode(ptsNode)
+            shNode.SetItemParent(ptsNodeItem, projPtsFolderItem)
 
 
     def onCompareFitPushButton(self):
@@ -1287,7 +1611,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             marginKeys = list(plateOrbitDistsDict.keys())
             plateKeys = list(plateOrbitDistsDict[marginKeys[0]].keys())
             #
-            self.ui.fitnessRankInfoBox.clear
+            self.ui.fitnessRankInfoBox.clear()
             self.ui.fitnessRankInfoBox.insertPlainText(
                 f":: The ranks of plate fit based on overall mean distances between margin and orbit are: \n"
             )
@@ -1385,8 +1709,9 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             )
 
         logic.createRankDf(plateNames, rankHeatmapList, meanHeatmapArrayList, compareFitExportDir)
-        self.ui.showAllHeatmapModelsPushButton.enabled=True
-        self.ui.showAllMarginPtsPushButton.enabled=True
+        # self.ui.showAllHeatmapModelsPushButton.enabled=True
+        # self.ui.showAllMarginPtsPushButton.enabled=True
+        self.ui.showExistResultsCheckBox.checked = 1
         return
 
 
@@ -1406,6 +1731,8 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             modelFilePath = os.path.join(fitMetricsDir, folder, modelFile)
             plateModelNode = slicer.util.loadModel(modelFilePath)
             d = plateModelNode.GetDisplayNode()
+            d.SetVisibility(True)
+            d.SetVisibility2D(True)
             d.SetScalarVisibility(True)
             d.SetActiveScalarName('Distance')
             colorTableNode = slicer.util.getNode('RedGreenBlue')
@@ -1414,6 +1741,15 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             d.SetScalarRange(0, 5)
             plateModelItem = shNode.GetItemByDataNode(plateModelNode)
             shNode.SetItemParent(plateModelItem, platesFolderItem)
+            # Display color legend
+            colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+                plateModelNode)
+            colorLegendDisplayNode.SetVisibility(True)
+            labelFormat = "%4.1f mm"
+            heatmapTitle = "plate_to_orbit_distance_heatmap\n"
+            colorLegendDisplayNode.SetTitleText(heatmapTitle)
+            colorLegendDisplayNode.SetLabelFormat(labelFormat)
+            #
 
 
     def onShowAllMarginPtsPushButton(self):
@@ -2189,19 +2525,20 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         plateBaseNames = [item for item in os.listdir(plateMarginInputRootDir) if
                            os.path.isdir(os.path.join(plateMarginInputRootDir, item))]
         plateBaseNames = sorted(plateBaseNames)
-        print(f"PlatePtsDirList contains {plateBaseNames}")
+        # print(f"PlatePtsDirList contains {plateBaseNames}")
         platePtsDir = os.path.join(plateMarginInputRootDir, plateBaseNames[0])
         ptsFileNames = [file for file in os.listdir(platePtsDir) if file.endswith((".fscv", ".json"))]
         ptsFileNames = sorted(ptsFileNames)
         ptsFileNames = [name.split('.')[0] for name in ptsFileNames]
-        print(f"ptsFileNames are {ptsFileNames}")
+        # print(f"ptsFileNames are {ptsFileNames}")
         plateMarginNames = []
-        for i in range(len(ptsFileNames)):
-            if ptsFileNames[i].startswith(plateBaseNames[0]):
-                marginName = ptsFileNames[i].removeprefix(plateBaseNames[0] + '_')
-                plateMarginNames.append(marginName)
-            else:
-                plateMarginNames.append(ptsFileNames[i])
+        # for i in range(len(ptsFileNames)):
+        #     if ptsFileNames[i].startswith(plateBaseNames[0]):
+        #         marginName = ptsFileNames[i].removeprefix(plateBaseNames[0] + '_')
+        #         plateMarginNames.append(marginName)
+        #     else:
+        #         plateMarginNames.append(ptsFileNames[i])
+        plateMarginNames = ptsFileNames
         print(f"plate margin names are {plateMarginNames}")
         return plateMarginNames
 
@@ -2250,11 +2587,11 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
                 marginOrbitLmDists = np.sqrt(np.sum(np.square(margin_i_lms - proj_i_lms), axis=1))
                 lmDistsSubDict = lmDistsDict.setdefault(margin, {})
                 lmDistsSubDict[plate] = marginOrbitLmDists #Individual lm distances between margin_i and proj_i
-        print(f"the landmark coordinates of {margin} of {plate} are")
-        print(margin_i_lms)
-        print(f"the projected landmark coordinates of {margin} of {plate} are")
-        print(proj_i_lms)
-        print(f"The distances of the first margin in lmDistDict is {marginKeys[0]} {lmDistsDict[marginKeys[0]]}")
+        # print(f"the landmark coordinates of {margin} of {plate} are")
+        # print(margin_i_lms)
+        # print(f"the projected landmark coordinates of {margin} of {plate} are")
+        # print(proj_i_lms)
+        # print(f"The distances of the first margin in lmDistDict is {marginKeys[0]} {lmDistsDict[marginKeys[0]]}")
         return lmDistsDict
 
 
@@ -2279,12 +2616,12 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         rankArray = rankArray.astype(int)
         plateOverallMeans = np.mean(meanDistsArray, axis = 0)
         plateOverallRanks = [sorted(plateOverallMeans).index(j) for j in plateOverallMeans]
-        print(f'plate margin ranks are {rankArray}')
-        print(f'mean margin distance arrays are {meanDistsArray}')
-        print(f'mean distance dictionary is {meanDistsDict}')
-        # print(rankScoreSum)
-        print(f'plate overall means are {plateOverallMeans}')
-        print(f'plateOverallRanks are {plateOverallRanks}')
+        # print(f'plate margin ranks are {rankArray}')
+        # print(f'mean margin distance arrays are {meanDistsArray}')
+        # print(f'mean distance dictionary is {meanDistsDict}')
+        # # print(rankScoreSum)
+        # print(f'plate overall means are {plateOverallMeans}')
+        # print(f'plateOverallRanks are {plateOverallRanks}')
         #
         return meanDistsDict, meanDistsArray, rankArray, plateOverallMeans, plateOverallRanks
 
