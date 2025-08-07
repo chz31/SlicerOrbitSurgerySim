@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FastModelAlign</class>
- <widget class="qMRMLWidget" name="FastModelAlign">
+ <class>plateRegistrationAndFit</class>
+ <widget class="qMRMLWidget" name="plateRegistrationAndFit">
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
-    <height>777</height>
+    <width>1289</width>
+    <height>1616</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -23,7 +23,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="plateRegistrationTab">
       <attribute name="title">
@@ -31,138 +31,347 @@
       </attribute>
       <layout class="QVBoxLayout" name="alignSingleLayout">
        <item>
+        <widget class="QLabel" name="label_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Node Viewer</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="qMRMLSubjectHierarchyTreeView" name="plateRegistrationSubjectHierarchyTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="levelFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+           <string>vtkMRMLMarkupsFiducialNode</string>
+          </stringlist>
+         </property>
+         <property name="hideChildNodeTypes">
+          <stringlist notr="true"/>
+         </property>
+         <property name="idColumnVisible">
+          <bool>false</bool>
+         </property>
+         <property name="includeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <attribute name="headerVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+       <item>
         <widget class="ctkCollapsibleButton" name="alignSingleWidget">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Inputs</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
          </property>
-         <layout class="QFormLayout" name="FormLayout_1">
-          <item row="0" column="0">
-           <widget class="QLabel" name="inputOrbitModelLabel">
-            <property name="text">
-             <string>Orbit Model</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="qMRMLNodeComboBox" name="inputOrbitModelSelector">
-            <property name="enabled">
-             <bool>true</bool>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="9" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="plateFiducialSelector">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="toolTip">
-             <string>Select target model</string>
+             <string>Select a fiducial markup node with three landmarks. The second landmark should be correspondent to the posterior stop.</string>
             </property>
-            <property name="nodeTypes">
-             <stringlist>
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
+            <property name="defaultText">
+             <string>Select a plate landmark set</string>
             </property>
             <property name="noneEnabled">
              <bool>true</bool>
             </property>
-            <property name="addEnabled">
+            <property name="showCurrentItemParents">
              <bool>false</bool>
             </property>
-            <property name="removeEnabled">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="inputOrbitFiducialLabel">
-            <property name="text">
-             <string>Orbit landmarks</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="qMRMLNodeComboBox" name="orbitFiducialSelector">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLMarkupsFiducialNode</string>
-             </stringlist>
-            </property>
-            <property name="hideChildNodeTypes">
+            <property name="includeItemAttributeNamesFilter">
              <stringlist notr="true"/>
             </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
+            <property name="includeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
             </property>
-            <property name="addEnabled">
-             <bool>false</bool>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
             </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="inputPlateModelLabel">
-            <property name="text">
-             <string>Plate model</string>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="qMRMLNodeComboBox" name="plateModelSelector">
+          <item row="3" column="2">
+           <widget class="QPushButton" name="placeOrbitLmPushButton">
             <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="nodeTypes">
-             <stringlist>
-              <string>vtkMRMLModelNode</string>
-             </stringlist>
-            </property>
-            <property name="noneEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="addEnabled">
              <bool>false</bool>
             </property>
-            <property name="removeEnabled">
-             <bool>true</bool>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="renameEnabled">
-             <bool>true</bool>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Create a fiducial markup node and place three landmarks.&lt;/span&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;The second landmark should be the posterior stop.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <property name="noneDisplay">
-             <string>None</string>
+            <property name="text">
+             <string>+ Add orbit landmarks</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
+          <item row="9" column="0">
            <widget class="QLabel" name="inputPlateFiducialLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
-             <string>Plate landmarks</string>
+             <string>Plate landmarks:</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="qMRMLNodeComboBox" name="plateFiducialSelector">
-            <property name="enabled">
-             <bool>true</bool>
+           <widget class="qMRMLSubjectHierarchyComboBox" name="orbitFiducialSelector">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="nodeTypes">
-             <stringlist notr="true">
-              <string>vtkMRMLMarkupsFiducialNode</string>
-             </stringlist>
+            <property name="toolTip">
+             <string>Select a fiducial markup node that contains three landmarks. The second landmark should be the posterior stop.</string>
             </property>
-            <property name="hideChildNodeTypes">
-             <stringlist notr="true"/>
+            <property name="defaultText">
+             <string>Select a fractured orbit landmark set</string>
             </property>
             <property name="noneEnabled">
              <bool>true</bool>
             </property>
-            <property name="addEnabled">
+            <property name="showCurrentItemParents">
              <bool>false</bool>
             </property>
-            <property name="interactionNodeSingletonTag">
-             <string notr="true"/>
+            <property name="includeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="includeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="inputPlateModelLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Plate model:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="plateModelSelector">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="defaultText">
+             <string>Select a plate model</string>
+            </property>
+            <property name="alignPopupVertically">
+             <bool>false</bool>
+            </property>
+            <property name="noneEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="showCurrentItemParents">
+             <bool>false</bool>
+            </property>
+            <property name="includeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="includeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="inputOrbitFiducialLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Orbit landmarks:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="2">
+           <widget class="QPushButton" name="placePlateLmPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>+ Add Platet landmarks</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="inputOrbitModelLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Orbit Model:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="inputOrbitModelSelector">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Select a fractured orbit model</string>
+            </property>
+            <property name="editable">
+             <bool>false</bool>
+            </property>
+            <property name="currentText">
+             <string/>
+            </property>
+            <property name="defaultText">
+             <string>Select a fractured orbit model</string>
+            </property>
+            <property name="noneEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="showCurrentItemParents">
+             <bool>false</bool>
+            </property>
+            <property name="includeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="CollapsibleButton_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Load and modify previous registration</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="modifyPlateCheckBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Modify pre-registered plate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="ctkPathLineEdit" name="modifyPlatePathLineEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="filters">
+             <set>ctkPathLineEdit::Dirs</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="ctkPushButton" name="loadPlateRegPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Load previous results</string>
             </property>
            </widget>
           </item>
@@ -171,6 +380,12 @@
        </item>
        <item>
         <widget class="ctkCollapsibleButton" name="initialRegistrationCollapsibleButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Initial Registration</string>
          </property>
@@ -178,10 +393,16 @@
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="1" column="0" colspan="2">
+          <item row="4" column="0">
            <widget class="QPushButton" name="initialRegistrationPushButton">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="toolTip">
              <string>Run subsampling of the source and target pointclouds</string>
@@ -191,10 +412,16 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item row="5" column="0">
            <widget class="QPushButton" name="posteriorStopRegistrationPushButton">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="toolTip">
              <string>Run a full pairwise ALPACA</string>
@@ -209,27 +436,29 @@
        </item>
        <item>
         <widget class="ctkCollapsibleButton" name="intersectionCollapsibleButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
-          <string>Plate and orbit intersection</string>
+          <string>Plate intractive adjustment</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
          </property>
-         <layout class="QFormLayout" name="runSingleALPACAWidgetLayout">
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="interactionTransformCheckbox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Enable 3D interaction transform handle</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="3" column="0">
            <widget class="QPushButton" name="createIntersectButton">
             <property name="enabled">
              <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="toolTip">
              <string>Switch the the Advanced Settings tab to change parameters and run/re-run ALPACA</string>
@@ -239,40 +468,69 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
-           <widget class="QPushButton" name="realignHandleToPStopButton">
+          <item row="6" column="0">
+           <widget class="QPushButton" name="instantHeatMapPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Create Distance Heatmap</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="instantIntersectionMarkerCheckBox">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="text">
-             <string>Realign posterior stop</string>
+             <string>Enable real-time intersection color marker</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="17" column="0">
+           <widget class="QPlainTextEdit" name="collisionInfoBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="interactionTransformCheckbox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Enable 3D interaction transform handle</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
            <widget class="QPushButton" name="resetToLastStepButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
-             <string>Reset to last step</string>
+             <string>Reset to initial registration at the posterior stop</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="1">
-           <widget class="QPlainTextEdit" name="collisionInfoBox"/>
-          </item>
-          <item row="6" column="1">
-           <widget class="QPushButton" name="resetAllButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Finalize Registration</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
+          <item row="1" column="0">
            <widget class="QCheckBox" name="instantCollisionDetectionCheckBox">
             <property name="enabled">
              <bool>false</bool>
@@ -282,14 +540,148 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QCheckBox" name="instantHeatmapCheckBox">
+          <item row="7" column="0">
+           <widget class="QPushButton" name="realignHandleToPStopButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
-            <property name="text">
-             <string>Enable real-time heatmap indicating intersection area</string>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
+            <property name="text">
+             <string>Realign posterior stop</string>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="0">
+           <widget class="ctkCollapsibleButton" name="resetFinalizeCollapsibleButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Reset/Finalize/Save</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Select dir for saving the current plate registration results: </string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Select dir for saving plate registration results for all the plates in the scene:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" colspan="2">
+              <widget class="QPushButton" name="resetAllPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Reset</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QPushButton" name="finalizePlateRegistrationPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Finalize Registration</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <widget class="QPushButton" name="saveCurrentRegPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Save current plate registratio results</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="0" colspan="2">
+              <widget class="QPushButton" name="saveAllRegPushButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Save All</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0" colspan="2">
+              <widget class="ctkPathLineEdit" name="currentRegResultsPathLineEdit">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>Choose a directory to save the current plate registration results.</string>
+               </property>
+               <property name="label">
+                <string>Choose a directory</string>
+               </property>
+               <property name="filters">
+                <set>ctkPathLineEdit::Dirs</set>
+               </property>
+               <property name="options">
+                <set>ctkPathLineEdit::ShowDirsOnly</set>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0" colspan="2">
+              <widget class="ctkPathLineEdit" name="saveAllRegPathLineEdit">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="filters">
+                <set>ctkPathLineEdit::Dirs</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
@@ -299,19 +691,53 @@
      </widget>
      <widget class="QWidget" name="manualAdjustTab">
       <attribute name="title">
-       <string>Plate fitness</string>
+       <string>Plate fit metrics</string>
       </attribute>
       <layout class="QVBoxLayout" name="advancedSettingsLayout">
        <item>
+        <widget class="qMRMLSubjectHierarchyTreeView" name="SubjectHierarchyTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="levelFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+           <string>vtkMRMLMarkupsFiducialNode</string>
+          </stringlist>
+         </property>
+         <property name="hideChildNodeTypes">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="ctkCollapsibleButton" name="CollapsibleButton">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Input</string>
+          <string>Points projection from the scene</string>
          </property>
          <property name="collapsed">
           <bool>false</bool>
@@ -322,300 +748,276 @@
          <property name="buttonTextAlignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
-         <widget class="qMRMLNodeComboBox" name="plateModelSelector2">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="geometry">
-           <rect>
-            <x>180</x>
-            <y>40</y>
-            <width>281</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>160</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="nodeTypes">
-           <stringlist notr="true">
-            <string>vtkMRMLModelNode</string>
-           </stringlist>
-          </property>
-          <property name="hideChildNodeTypes">
-           <stringlist notr="true"/>
-          </property>
-          <property name="noneEnabled">
-           <bool>true</bool>
-          </property>
-          <property name="addEnabled">
-           <bool>false</bool>
-          </property>
-          <property name="interactionNodeSingletonTag">
-           <string notr="true"/>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>40</y>
-            <width>151</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>16</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Aligned plate model</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-         <widget class="qMRMLNodeComboBox" name="orbitModelSelector2">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="geometry">
-           <rect>
-            <x>180</x>
-            <y>70</y>
-            <width>281</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>160</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="nodeTypes">
-           <stringlist notr="true">
-            <string>vtkMRMLModelNode</string>
-           </stringlist>
-          </property>
-          <property name="hideChildNodeTypes">
-           <stringlist notr="true"/>
-          </property>
-          <property name="noneEnabled">
-           <bool>true</bool>
-          </property>
-          <property name="addEnabled">
-           <bool>false</bool>
-          </property>
-          <property name="interactionNodeSingletonTag">
-           <string notr="true"/>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_2">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>70</y>
-            <width>151</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Repaired orbit model</string>
-          </property>
-         </widget>
-         <widget class="ctkPathLineEdit" name="fitnessOutoutDir">
-          <property name="geometry">
-           <rect>
-            <x>180</x>
-            <y>160</y>
-            <width>281</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="filters">
-           <set>ctkPathLineEdit::Dirs</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_7">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>160</y>
-            <width>121</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Output directory</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_8">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>130</y>
-            <width>131</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Input directory</string>
-          </property>
-         </widget>
-         <widget class="ctkPathLineEdit" name="fitnessInputDir">
-          <property name="geometry">
-           <rect>
-            <x>180</x>
-            <y>130</y>
-            <width>281</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <property name="filters">
-           <set>ctkPathLineEdit::Dirs</set>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_9">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>100</y>
-            <width>121</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Select transform</string>
-          </property>
-         </widget>
-         <widget class="qMRMLNodeComboBox" name="plateTransformSelector">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="geometry">
-           <rect>
-            <x>180</x>
-            <y>100</y>
-            <width>281</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>160</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="nodeTypes">
-           <stringlist notr="true">
-            <string>vtkMRMLTransformNode</string>
-           </stringlist>
-          </property>
-          <property name="hideChildNodeTypes">
-           <stringlist notr="true"/>
-          </property>
-          <property name="noneEnabled">
-           <bool>true</bool>
-          </property>
-          <property name="addEnabled">
-           <bool>false</bool>
-          </property>
-          <property name="interactionNodeSingletonTag">
-           <string notr="true"/>
-          </property>
-         </widget>
-         <widget class="ctkCollapsibleButton" name="CollapsibleButton_2">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>210</y>
-            <width>536</width>
-            <height>381</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Calculate plate fitness</string>
-          </property>
-          <widget class="QPushButton" name="computeHeatmapPushButton">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>40</y>
-             <width>451</width>
-             <height>28</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>160</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Compute heatmap</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="projectPointsButton">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>80</y>
-             <width>451</width>
-             <height>28</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>160</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Projecting points from a plate to orbit</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="compareFitnessButton">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>120</y>
-             <width>451</width>
-             <height>28</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>160</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Compare fitness</string>
-           </property>
-          </widget>
-          <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>160</y>
-             <width>451</width>
-             <height>141</height>
-            </rect>
-           </property>
-          </widget>
-         </widget>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="6" column="0" colspan="2">
+           <widget class="QPushButton" name="projectPtsBatchScenePushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Project Points from each plate to the orbit  (reconstructed orbit recommended)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Repaired orbit model: </string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QPushButton" name="computeHeatmapPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>160</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Compute distance map between the plate and the orbit (reconstructed orbit recommended)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Plate margin points root directory:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="qMRMLSubjectHierarchyComboBox" name="orbitReconShComboBox">
+            <property name="noneEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="showCurrentItemParents">
+             <bool>false</bool>
+            </property>
+            <property name="showEmptyHierarchyItems">
+             <bool>false</bool>
+            </property>
+            <property name="includeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="includeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeItemAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+            <property name="excludeNodeAttributeNamesFilter">
+             <stringlist notr="true"/>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="ctkPathLineEdit" name="platePtsBatchPathLineEdit">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="filters">
+             <set>ctkPathLineEdit::Dirs</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="ctkCollapsibleButton" name="CollapsibleButton_4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Visualization</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="3" column="0" colspan="3">
+           <widget class="QPushButton" name="visuOnePlatePushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Visualize distance heatmap for individual plate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Select a model folder in fit metrics dir for visualizing heatmap &amp; point projection results: </string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="3">
+           <widget class="QPushButton" name="visuPtsPushButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Visualize point projection for individual plates</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="ctkPathLineEdit" name="visuPlateMetricPathLineEdit">
+            <property name="filters">
+             <set>ctkPathLineEdit::Dirs|ctkPathLineEdit::Readable</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>Compare fit</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="2" column="0">
+        <widget class="ctkPathLineEdit" name="compareFitPathLineEdit">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="filters">
+          <set>ctkPathLineEdit::Dirs</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="qMRMLSubjectHierarchyTreeView" name="compareFitSHTreeView">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="levelFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="nodeTypes">
+          <stringlist notr="true">
+           <string>vtkMRMLModelNode</string>
+           <string>vtkMRMLMarkupsFiducialNode</string>
+          </stringlist>
+         </property>
+         <property name="hideChildNodeTypes">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="includeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeItemAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+         <property name="excludeNodeAttributeNamesFilter">
+          <stringlist notr="true"/>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QPushButton" name="showAllMarginPtsPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show points on the margins</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QPushButton" name="showAllHeatmapModelsPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Show superimposed plates with distance heatmap</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="compareFitPushButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+           <horstretch>160</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Compare fitness</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="ctkCheckBox" name="showExistResultsCheckBox">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Visualize existing results</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="compareMarginDistsCheckBox">
+         <property name="text">
+          <string>Compare distances between plate margins and orbits (Requiring points projection from margins to the reconstructed orbit)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QPlainTextEdit" name="fitnessRankInfoBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
         </widget>
        </item>
       </layout>
@@ -626,10 +1028,20 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>ctkCheckBox</class>
+   <extends>QCheckBox</extends>
+   <header>ctkCheckBox.h</header>
+  </customwidget>
+  <customwidget>
    <class>ctkCollapsibleButton</class>
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkComboBox</class>
+   <extends>QComboBox</extends>
+   <header>ctkComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ctkPathLineEdit</class>
@@ -637,9 +1049,9 @@
    <header>ctkPathLineEdit.h</header>
   </customwidget>
   <customwidget>
-   <class>qMRMLNodeComboBox</class>
-   <extends>QWidget</extends>
-   <header>qMRMLNodeComboBox.h</header>
+   <class>ctkPushButton</class>
+   <extends>QPushButton</extends>
+   <header>ctkPushButton.h</header>
   </customwidget>
   <customwidget>
    <class>qMRMLWidget</class>
@@ -647,7 +1059,34 @@
    <header>qMRMLWidget.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>qMRMLSubjectHierarchyTreeView</class>
+   <extends>QTreeView</extends>
+   <header>qMRMLSubjectHierarchyTreeView.h</header>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLSubjectHierarchyComboBox</class>
+   <extends>ctkComboBox</extends>
+   <header>qMRMLSubjectHierarchyComboBox.h</header>
+  </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>plateRegistrationAndFit</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>SubjectHierarchyTreeView</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>544</x>
+     <y>775</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>281</x>
+     <y>478</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
