@@ -443,10 +443,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
         except:
             pass
-        try:
-            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
-        except:
-            pass
         if bool(self.ui.orbitReconShComboBox.currentItem()):
             orbitModelReconItemId = self.ui.orbitReconShComboBox.currentItem()
             self._parameterNode.orbitModelRecon = shNode.GetItemDataNode(orbitModelReconItemId)
@@ -655,7 +651,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateFiducialSelector.enabled = False
         self.ui.posteriorStopRegistrationPushButton.enabled = True
         self.ui.resetAllPushButton.enabled = True
-        self.ui.finalizePlateRegistrationPushButton.enabled = True
         #
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
         self._parameterNode.orbitLm.GetDisplayNode().SetVisibility(True)
@@ -1173,10 +1168,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
         if self.ui.modifyPlateCheckBox.isChecked():
+            # print(f'self._parameterNode.plateNameUpdateReg is {self._parameterNode.plateNameUpdateReg}')
             self._parameterNode.interactionPlateModel.SetName(
                 self._parameterNode.plateNameUpdateReg + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.plateNameUpdateReg
         else:
+            # self._parameterNode.interactionPlateModel = self._parameterNode.originalPlateModel
             self._parameterNode.interactionPlateModel.SetName(
                 self._parameterNode.originalPlateModel.GetName() + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
@@ -1274,7 +1271,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.fractureOrbitModel = shNode.GetItemDataNode(orbitModelId)
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
         if interactionFlag == 1:
-            self._parameterNode.interactionPlateModel = shNode.GetItemDataNode(interactionPlateId)
+            # self._parameterNode.interactionPlateModel = shNode.GetItemDataNode(interactionPlateId)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
         else:
             self._parameterNode.rigidRegisteredPlateModel = shNode.GetItemDataNode(rigidPlateModelId)
@@ -1453,69 +1450,71 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
     def onPlateHeatmap(self):
         logic = plateRegistrationLogic()
         plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
+        print(f'plate margin input root dir is {plateMarginInputRootDir}')
         rootDir = os.path.dirname(plateMarginInputRootDir)
         outputRootDir = os.path.join(rootDir, "fit_output", "fit_metrics")
         os.makedirs(outputRootDir, exist_ok=True)
         #
-        plateBaseNames = [
-            name
-            for name in os.listdir(plateMarginInputRootDir)
-            if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
-        ]
+        # plateBaseNames = [
+        #     name
+        #     for name in os.listdir(plateMarginInputRootDir)
+        #     if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
+        # ]
         plateRegDir = os.path.join(rootDir, 'plate_registration_results')
         # registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
         plateRegFolders = [folder for folder in os.listdir(plateRegDir) if
                            os.path.isdir(os.path.join(plateRegDir, folder))]
+        print(f'plate folders are {plateRegFolders}')
         for currentPlateFolderName in plateRegFolders:
-            for baseName in plateBaseNames:
-                if not currentPlateFolderName.startswith(baseName):
-                    continue
-                else:
-                    # finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
-                    # finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
-                    logfile = "plate_registration.log"
-                    logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
-                    with open(logfilepath, "r") as f:
-                        lines = [L.strip() for L in f]
-                    finalPlateFile = lines[0].split(":", 1)[1].strip()
-                    finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
-                    finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
+            # for baseName in plateBaseNames:
+            #     if not currentPlateFolderName.startswith(baseName):
+            #         continue
+            #     else:
+            logfile = "plate_registration.log"
+            logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
+            print(f'log file path is {logfilepath}')
+            with open(logfilepath, "r") as f:
+                lines = [L.strip() for L in f]
+            finalPlateFile = lines[0].split(":", 1)[1].strip()
+            print(f'final plate file is {finalPlateFile}')
+            finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
+            finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
 
-                    orbitReconModelNode = self._parameterNode.orbitModelRecon
-                    plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
-                    #
-                    d = finalPlateModelNode.GetDisplayNode()
-                    d.SetScalarVisibility(True)
-                    d.SetActiveScalarName('Distance')
-                    colorTableNode = slicer.util.getNode('RedGreenBlue')
-                    d.SetAndObserveColorNodeID(colorTableNode.GetID())
-                    d.SetScalarRangeFlagFromString('Manual')
-                    d.SetScalarRange(0, 5)
-                    #Save scalar as csv & histogram
-                    scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
-                    scalarArray = np.abs(scalarArray)
+            orbitReconModelNode = self._parameterNode.orbitModelRecon
+            plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
+            #
+            d = finalPlateModelNode.GetDisplayNode()
+            d.SetScalarVisibility(True)
+            d.SetActiveScalarName('Distance')
+            colorTableNode = slicer.util.getNode('RedGreenBlue')
+            d.SetAndObserveColorNodeID(colorTableNode.GetID())
+            d.SetScalarRangeFlagFromString('Manual')
+            d.SetScalarRange(0, 5)
+            #Save scalar as csv & histogram
+            scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
+            scalarArray = np.abs(scalarArray)
 
-                    # Display color legend
-                    colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
-                        finalPlateModelNode)
-                    colorLegendDisplayNode.SetVisibility(True)
-                    labelFormat = "%4.1f mm"
-                    colorLegendDisplayNode.SetLabelFormat(labelFormat)
-                    #
-                    outputDir = os.path.join(outputRootDir, currentPlateFolderName)
-                    os.makedirs(outputDir, exist_ok=True)
-                    logic.plotScalarHistogram(scalarArray, outputDir, baseName, currentPlateFolderName)
-                    #
-                    #Saving in PLY with color table
-                    platePLYName = currentPlateFolderName + "_heatmap.ply"
-                    platePLYPath = os.path.join(outputDir, platePLYName)
-                    logic.savePLYWithScalarTable(finalPlateModelNode, platePLYPath)
-                    #
-                    plateVTKName = currentPlateFolderName + "_heatmap.vtk" #directly saving the scalar with the model
-                    plateVTKPath = os.path.join(outputDir, plateVTKName)
-                    slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
-                    self.ui.compareFitPathLineEdit.currentPath = outputRootDir
-                    slicer.mrmlScene.RemoveNode(finalPlateModelNode)
+            # Display color legend
+            colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+                finalPlateModelNode)
+            colorLegendDisplayNode.SetVisibility(True)
+            labelFormat = "%4.1f mm"
+            colorLegendDisplayNode.SetLabelFormat(labelFormat)
+            #
+            outputDir = os.path.join(outputRootDir, currentPlateFolderName)
+            os.makedirs(outputDir, exist_ok=True)
+            logic.plotScalarHistogram(scalarArray, outputDir, currentPlateFolderName)
+            #
+            #Saving in PLY with color table
+            platePLYName = currentPlateFolderName + "_heatmap.ply"
+            platePLYPath = os.path.join(outputDir, platePLYName)
+            logic.savePLYWithScalarTable(finalPlateModelNode, platePLYPath)
+            #
+            plateVTKName = currentPlateFolderName + "_heatmap.vtk" #directly saving the scalar with the model
+            plateVTKPath = os.path.join(outputDir, plateVTKName)
+            slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
+            self.ui.compareFitPathLineEdit.currentPath = outputRootDir
+            slicer.mrmlScene.RemoveNode(finalPlateModelNode)
 
 
 
@@ -2129,7 +2128,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         slicer.mrmlScene.RemoveNode(transformNode)
 
 
-    def plotScalarHistogram(self, scalarArray, outputDir, imageTitleBase, imageFileNameBase):
+    def plotScalarHistogram(self, scalarArray, outputDir, imageFileNameBase):
         try:
           import matplotlib
         except ModuleNotFoundError:
@@ -2152,7 +2151,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # Label the axes and add a title
         ax.set_xlabel('Distance (mm)')
         ax.set_ylabel('Percentage (%)')
-        ax.set_title(imageTitleBase + "_heatmap_distances_to_orbit")
+        ax.set_title("plate_heatmap_distances_to_orbit")
         
         # Set custom x-axis tick labels:
         # Labels 0 through 5 and then the maximum distance value as the last label.
