@@ -84,7 +84,7 @@ def registerSampleData():
         category="orbitPlateRegistration",
         sampleName="plateRegistrationSampleDataFiles",
         thumbnailFileName=os.path.join(iconsPath, "plateRegistrationSampleDataIcon.png"),
-        uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/2f937ae81b0502b4f7056319010eb7d5a5609dda/plateRegistrationSampleData.zip",
+        uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/refs/heads/main/plateRegistrationSampleData.zip",
         loadFiles=False,
         fileNames="plateRegistrationSampleData.zip",
         loadFileType='ZipFile',

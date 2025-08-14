@@ -8,6 +8,8 @@ import numpy as np
 import copy
 import math
 
+import qt
+
 import slicer
 from slicer.i18n import tr as _
 from slicer.i18n import translate
@@ -48,6 +50,60 @@ See more information in <a href="https://github.com/organization/projectname#mir
         self.parent.acknowledgementText = _("""
 In addition to Slicer base functions, the module reused itk functions for rigid registration from the ALPACA and FastModelAlign Modules of SlicerMorph extension (https://slicermorph.github.io/).
 """)
+        # Additional initialization step after application startup is complete
+        slicer.app.connect("startupCompleted()", registerSampleData)
+
+
+def registerSampleData():
+    """Add data sets to Sample Data module."""
+    # It is always recommended to provide sample data for users to make it easy to try the module,
+    # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
+
+    import SampleData
+
+    iconsPath = os.path.join(os.path.dirname(__file__), "Resources/Icons")
+
+    # To ensure that the source code repository remains small (can be downloaded and installed quickly)
+    # it is recommended to store data sets that are larger than a few MB in a Github release.
+
+    # plateRegistration1
+    SampleData.SampleDataLogic.registerCustomSampleDataSource(
+        # Category and sample name displayed in Sample Data module
+        category="fractureOrbitMirrorReconstruction",
+        sampleName="orbitMirrorReconSampleData",
+        thumbnailFileName=os.path.join(iconsPath, "mirrorOrbitReconSampleData.png"),
+        uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/refs/heads/main/orbiMirrorReconSampleData.zip",
+        loadFiles=False,
+        fileNames="orbiMirrorReconSampleData.zip",
+        loadFileType='ZipFile',
+        checksums=None,
+        customDownloader=downloadSampleDataInFolder,
+    )
+
+def downloadSampleDataInFolder(source):
+    sampleDataLogic = slicer.modules.sampledata.widgetRepresentation().self().logic
+    # Retrieve directory
+    category = "fractureOrbitMirrorReconstruction"
+    savedDirectory = slicer.app.userSettings().value(
+          "SampleData/Last%sDownloadDirectory" % category,
+          qt.QStandardPaths.writableLocation(qt.QStandardPaths.DocumentsLocation))
+
+    destFolderPath = str(qt.QFileDialog.getExistingDirectory(slicer.util.mainWindow(), 'Destination Folder', savedDirectory))
+    if not os.path.isdir(destFolderPath):
+      return
+    print('Selected data folder: %s' % destFolderPath)
+    for uri, fileName, checksum  in zip(source.uris, source.fileNames, source.checksums):
+      sampleDataLogic.downloadFile(uri, destFolderPath, fileName, checksum)
+
+    # Save directory
+    slicer.app.userSettings().setValue("SampleData/Last%sDownloadDirectory" % category, destFolderPath)
+    filepath=destFolderPath+"/setup.py"
+    if (os.path.exists(filepath)):
+      spec = importlib.util.spec_from_file_location("setup",filepath)
+      setup = importlib.util.module_from_spec(spec)
+      spec.loader.exec_module(setup)
+      setup.setup()
+
 
 #
 # mirrorOrbitReconParameterNode
