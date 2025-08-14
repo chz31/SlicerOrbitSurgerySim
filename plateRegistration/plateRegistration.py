@@ -43,7 +43,9 @@ class plateRegistration(ScriptedLoadableModule):
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-        self.parent.contributors = ["Chi Zhang (Texas A&M University College of Dentistry), Kyle Sunderland (Perk Lab, Queen's University), Andrew Read-Fuller (Texas A&M University College of Dentistry)"]  # TODO: replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Chi Zhang (Texas A&M University College of Dentistry), "
+                                    "Andrew Read-Fuller (Texas A&M University College of Dentistry), "
+                                    "Kyle Sunderland (Perk Lab, Queen's University)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
         # _() function marks text as translatable to other languages
         self.parent.helpText = _("""
@@ -56,7 +58,7 @@ Will update soon
 """)
 
         # Additional initialization step after application startup is complete
-        # slicer.app.connect("startupCompleted()", registerSampleData)
+        slicer.app.connect("startupCompleted()", registerSampleData)
 
 
 #
@@ -64,49 +66,55 @@ Will update soon
 #
 
 
-# def registerSampleData():
-#     """Add data sets to Sample Data module."""
-#     # It is always recommended to provide sample data for users to make it easy to try the module,
-#     # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
-# 
-#     import SampleData
-# 
-#     iconsPath = os.path.join(os.path.dirname(__file__), "Resources/Icons")
-# 
-#     # To ensure that the source code repository remains small (can be downloaded and installed quickly)
-#     # it is recommended to store data sets that are larger than a few MB in a Github release.
-# 
-#     # plateRegistration1
-#     SampleData.SampleDataLogic.registerCustomSampleDataSource(
-#         # Category and sample name displayed in Sample Data module
-#         category="plateRegistration",
-#         sampleName="plateRegistration1",
-#         # Thumbnail should have size of approximately 260x280 pixels and stored in Resources/Icons folder.
-#         # It can be created by Screen Capture module, "Capture all views" option enabled, "Number of images" set to "Single".
-#         thumbnailFileName=os.path.join(iconsPath, "plateRegistration1.png"),
-#         # Download URL and target file name
-#         uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
-#         fileNames="plateRegistration1.nrrd",
-#         # Checksum to ensure file integrity. Can be computed by this command:
-#         #  import hashlib; print(hashlib.sha256(open(filename, "rb").read()).hexdigest())
-#         checksums="SHA256:998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
-#         # This node name will be used when the data set is loaded
-#         nodeNames="plateRegistration1",
-#     )
-# 
-#     # plateRegistration2
-#     SampleData.SampleDataLogic.registerCustomSampleDataSource(
-#         # Category and sample name displayed in Sample Data module
-#         category="plateRegistration",
-#         sampleName="plateRegistration2",
-#         thumbnailFileName=os.path.join(iconsPath, "plateRegistration2.png"),
-#         # Download URL and target file name
-#         uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
-#         fileNames="plateRegistration2.nrrd",
-#         checksums="SHA256:1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
-#         # This node name will be used when the data set is loaded
-#         nodeNames="plateRegistration2",
-#     )
+def registerSampleData():
+    """Add data sets to Sample Data module."""
+    # It is always recommended to provide sample data for users to make it easy to try the module,
+    # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
+
+    import SampleData
+
+    iconsPath = os.path.join(os.path.dirname(__file__), "Resources/Icons")
+
+    # To ensure that the source code repository remains small (can be downloaded and installed quickly)
+    # it is recommended to store data sets that are larger than a few MB in a Github release.
+
+    # plateRegistration1
+    SampleData.SampleDataLogic.registerCustomSampleDataSource(
+        # Category and sample name displayed in Sample Data module
+        category="orbitPlateRegistration",
+        sampleName="plateRegistrationSampleDataFiles",
+        thumbnailFileName=os.path.join(iconsPath, "plateRegistrationSampleDataIcon.png"),
+        uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/2f937ae81b0502b4f7056319010eb7d5a5609dda/plateRegistrationSampleData.zip",
+        loadFiles=False,
+        fileNames="plateRegistrationSampleData.zip",
+        loadFileType='ZipFile',
+        checksums=None,
+        customDownloader=downloadSampleDataInFolder,
+    )
+
+def downloadSampleDataInFolder(source):
+    sampleDataLogic = slicer.modules.sampledata.widgetRepresentation().self().logic
+    # Retrieve directory
+    category = "orbitPlateRegistration"
+    savedDirectory = slicer.app.userSettings().value(
+          "SampleData/Last%sDownloadDirectory" % category,
+          qt.QStandardPaths.writableLocation(qt.QStandardPaths.DocumentsLocation))
+
+    destFolderPath = str(qt.QFileDialog.getExistingDirectory(slicer.util.mainWindow(), 'Destination Folder', savedDirectory))
+    if not os.path.isdir(destFolderPath):
+      return
+    print('Selected data folder: %s' % destFolderPath)
+    for uri, fileName, checksum  in zip(source.uris, source.fileNames, source.checksums):
+      sampleDataLogic.downloadFile(uri, destFolderPath, fileName, checksum)
+
+    # Save directory
+    slicer.app.userSettings().setValue("SampleData/Last%sDownloadDirectory" % category, destFolderPath)
+    filepath=destFolderPath+"/setup.py"
+    if (os.path.exists(filepath)):
+      spec = importlib.util.spec_from_file_location("setup",filepath)
+      setup = importlib.util.module_from_spec(spec)
+      spec.loader.exec_module(setup)
+      setup.setup()
 
 
 @parameterNodeWrapper
