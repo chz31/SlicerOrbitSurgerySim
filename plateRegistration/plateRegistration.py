@@ -2204,7 +2204,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # check if there is a table node has been created
         # numPoints = len(data)
         # uniqueFactors, factorCounts = np.unique(factors, return_counts=True)
-        factorNumber = len(factors)
+        # factorNumber = len(factors)
 
         # Set up chart
         plotChartNode = slicer.mrmlScene.GetFirstNodeByName(
@@ -2230,7 +2230,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             )
             if tableNode is None:
                 tableNode = slicer.mrmlScene.AddNewNodeByClass(
-                    "vtkMRMLTableNode", 
+                    "vtkMRMLTableNode",
                     "Table for the scatterplot " + title + factor
                 )
             else:
@@ -2244,13 +2244,6 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             labels = tableNode.AddColumn()
             labels.SetName("Subject ID")
             tableNode.SetColumnType("Subject ID", vtk.VTK_STRING)
-
-            # axisNum = 2
-            # for i in range(axisNum):
-            #     pc = tableNode.AddColumn()
-            #     colName = "PC" + str(i + 1)
-            #     pc.SetName(colName)
-            #     tableNode.SetColumnType(colName, vtk.VTK_FLOAT)
 
             xAxisCol = tableNode.AddColumn()
             colName = xAxisName
@@ -2268,24 +2261,16 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             # table.SetNumberOfRows(factorCounts[factorIndex])
             table.SetNumberOfRows(dataArray.shape[1])
 
-            #X = 1:len(dataArray.shape[1])
-            #Y = actual value of each row of the dataArray
-            # for i in range(numPoints):
-            #     if factors[i] == factor:
-            #         table.SetValue(factorCounter, 0, files[i])
-            #         for j in range(pcNumber):
-            #             table.SetValue(factorCounter, j + 1, data[i, j])
-            #         factorCounter += 1
             for j in range(dataArray.shape[1]):
                 table.SetValue(j, 0, subjectID[j])
                 table.SetValue(j, 1, j+1)
                 table.SetValue(j, 2, dataArray[i, j])
-            
 
-            plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(factor)
+            plotSeriesNodeName = f"plotSeriesNode_{factor}"
+            plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(plotSeriesNodeName)
             if plotSeriesNode is None:
                 plotSeriesNode = slicer.mrmlScene.AddNewNodeByClass(
-                    "vtkMRMLPlotSeriesNode", factor
+                    "vtkMRMLPlotSeriesNode", plotSeriesNodeName
                 )
                 # GPANodeCollection.AddItem(plotSeriesNode)
             # Create data series from table
