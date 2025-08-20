@@ -1497,10 +1497,10 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             colorTableNode = slicer.util.getNode('RedGreenBlue')
             d.SetAndObserveColorNodeID(colorTableNode.GetID())
             d.SetScalarRangeFlagFromString('Manual')
-            d.SetScalarRange(0, 5)
+            d.SetScalarRange(-5, 5)
             #Save scalar as csv & histogram
             scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
-            scalarArray = np.abs(scalarArray)
+            # scalarArray = np.abs(scalarArray)
 
             # Display color legend
             colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
@@ -1541,7 +1541,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         colorTableNode = slicer.util.getNode('RedGreenBlue')
         d.SetAndObserveColorNodeID(colorTableNode.GetID())
         d.SetScalarRangeFlagFromString('Manual')
-        d.SetScalarRange(0, 5)
+        d.SetScalarRange(-5, 5)
         # Display color legend
         colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
             plateScalarModelNode)
@@ -1745,7 +1745,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             colorTableNode = slicer.util.getNode('RedGreenBlue')
             d.SetAndObserveColorNodeID(colorTableNode.GetID())
             d.SetScalarRangeFlagFromString('Manual')
-            d.SetScalarRange(0, 5)
+            d.SetScalarRange(-5, 5)
             plateModelItem = shNode.GetItemByDataNode(plateModelNode)
             shNode.SetItemParent(plateModelItem, platesFolderItem)
             # Display color legend
@@ -2148,7 +2148,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         import pandas
         # Set the last bin edge to np.inf so that all values >= 5 go into the last bin.
         bins = np.array(list(np.arange(0, 6, 1)) + [np.inf])
-        counts, _ = np.histogram(scalarArray, bins=bins)
+        counts, _ = np.histogram(np.abs(scalarArray), bins=bins)
         percentage = counts / counts.sum() * 100
         # Set the bar positions will be at 0,1,2,3,4,5 with an extra tick label for the last bin.
         plot_bins = np.arange(0, 7)
@@ -2164,7 +2164,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # Set custom x-axis tick labels:
         # Labels 0 through 5 and then the maximum distance value as the last label.
         xtick_labels = [str(x) for x in np.arange(0, 6)]
-        maxScalar = np.round(scalarArray.max(), decimals = 3)
+        maxScalar = np.round(np.abs(scalarArray.max()), decimals = 3)
         xtick_labels.append(str(maxScalar))
         ax.set_xticks(plot_bins)
         ax.set_xticklabels(xtick_labels)
@@ -2632,7 +2632,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
                 next(reader) #skip the first row, which is 0 for some reasons
                 for row in reader:
                     scalarArray.append(float(row[0]))
-            meanScalar = np.mean(scalarArray)
+            meanScalar = np.mean(np.abs(scalarArray))
             print(f"mean scalar value is {meanScalar}")
             meanScalarArrayList.append(meanScalar)
 
