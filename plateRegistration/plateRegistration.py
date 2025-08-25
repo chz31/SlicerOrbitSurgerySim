@@ -195,6 +195,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         needInstall = False
         try:
             import pandas
+            import matplotlib
         except ModuleNotFoundError:
             needInstall = True
 
@@ -207,6 +208,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             slicer.app.processEvents()
             try:
                 slicer.util.pip_install(["pandas"])
+                slicer.util.pip_install(["matplotlib"])
             except:
                 slicer.util.infoDisplay("Issue while installing the pandas package. Please install it manually.")
                 progressDialog.close()
@@ -215,6 +217,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         try:
             import pandas
+            import matplotlib
         except ModuleNotFoundError as e:
             print("Module Not found. Please restart Slicer to load packages.")
 
