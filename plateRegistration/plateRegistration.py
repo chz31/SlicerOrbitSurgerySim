@@ -191,6 +191,34 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         # "setMRMLScene(vtkMRMLScene*)" slot.
         uiWidget.setMRMLScene(slicer.mrmlScene)
 
+        #Install pandas
+        needInstall = False
+        try:
+            import pandas
+        except ModuleNotFoundError:
+            needInstall = True
+
+        if needInstall:
+            progressDialog = slicer.util.createProgressDialog(
+                windowTitle="Installing...",
+                labelText="Installing Python dependencies. This may take a minute...",
+                maximum=0,
+            )
+            slicer.app.processEvents()
+            try:
+                slicer.util.pip_install(["pandas"])
+            except:
+                slicer.util.infoDisplay("Issue while installing the pandas package. Please install it manually.")
+                progressDialog.close()
+
+            progressDialog.close()
+
+        try:
+            import pandas
+        except ModuleNotFoundError as e:
+            print("Module Not found. Please restart Slicer to load packages.")
+
+
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = plateRegistrationLogic()
