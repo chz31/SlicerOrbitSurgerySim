@@ -20,6 +20,10 @@ Users can also use this tool to retrieve existing registered plates and adjust p
 
 2. Generating fit metrics
 The second tab of plate registration is for generating fit metrics. It is highly recommended to first reconstructing the fractured orbit using the mirror image of the intact side. See mirrorOrbitRecon tutorial below for more detail.
+
+Here is a video tutorial:
+Insert video here: https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2
+
 Fit metrics contains two types of data. First, it computes distances between each point of the plate model and the orbital model using the ray casting method (same as in the ModelToModel Distance module in Slicer). For this region, reconstructed orbital model is highly recommended. The fractured orbit is usually very difficult to segment and will have large holes. The distances are stored as scalar values in each vertex of the plate model and can be visualized as heatmap.
 
 Second, it projects user-defined plate curve points onto the orbit (reconstructed orbit highly recommended) and measure distances between selected plate margins to the orbit. The curve points can be conveniently placed using Slicer generic Markup module.
@@ -33,9 +37,11 @@ Users can placed their own curves and alter the density of points along each cur
 Users can also visualize point projection and heatamp for each individual plate.
 
 3. Compare fit is done by comparing the mean edges.
-  
+Here is a video tutorial: https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3
 
-5. Facilitate collaborative planning.
+
+4. Facilitate collaborative planning.
+The module can 
 
 mirrorOrbitRecon module tutorial.
 
