@@ -7,8 +7,9 @@ project(orbitSurgerySim)
 set(EXTENSION_HOMEPAGE "https://github.com/chz31/SlicerOrbitSurgerySim")
 set(EXTENSION_CONTRIBUTORS "Chi Zhang (Texas A&M Dentistry), Kyle Sunderland (Perk Lab, Queens), Andrew Read-Fuller (Texas A&M Dentistry)")
 set(EXTENSION_DESCRIPTION "orbitSurgerySim is for interactively registering and comparing the fit of surgical plates for orbital fracture repair.")
-set(EXTENSION_ICONURL "https://www.example.com/Slicer/Extensions/orbitSurgerySim.png")
-set(EXTENSION_SCREENSHOTURLS "https://www.example.com/Slicer/Extensions/orbitSurgerySim/Screenshots/1.png")
+set(EXTENSION_ICONURL "https://raw.githubusercontent.com/chz31/SlicerOrbitSurgerySim/main/orbitSurgerySim.png")
+set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/chz31/SlicerOrbitSurgerySim/main/orbitSurgerySimScreeshot.png
+")
 set(EXTENSION_DEPENDS "NA") # Specified as a list or "NA" if no dependencies
 
 #-----------------------------------------------------------------------------
