@@ -1,10 +1,18 @@
-The orbitSurgeySim module is used for interactively registered and compare the fit of plates (typically preformed plates) for orbital fracture repair. At this moment, it contains two modules:
+The orbitSurgeySim module is used for interactively registered and compare the fit of plates (typically preformed plates) for orbital fracture repair. 
+
+At this moment,this extension contains two modules:
 
 1. PlateRegistration module: Users can interactively adjust plate positions and compare different types of preformed plates across vendors or different ways of plate placement of the same plate. Repeatable ways of plate fit metrics are generated for ranking the fit of plates or perform more detailed downstream analysis.
+<img width="1548" height="1455" alt="Screenshot from 2025-08-26 13-05-46" src="https://github.com/user-attachments/assets/1f382ba1-8821-496f-a263-c1d9af1b3922" />
+The above picture illustrates registering 3D model of a vendor-provided plate at the fracture side using the plateRegistration module.
 
-2. mirrorOrbitalRecon module: this module uses the mirror model of the unfractured contralateral side to reconstruct orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPCACA/MALPACA and FastModelAlign modules of the SlicerMorph extension: https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file. See tutorials, Acknowledgement, and license for more information.
+3. mirrorOrbitalRecon module: this module uses the mirror model of the unfractured contralateral side to reconstruct orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPCACA/MALPACA and FastModelAlign modules of the SlicerMorph extension: https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file. See tutorials, Acknowledgement, and license for more information.
+<img width="1060" height="863" alt="image" src="https://github.com/user-attachments/assets/a3150e7f-6deb-4f57-a1f4-3c8b02db0efa" />
+<img width="1060" height="863" alt="image" src="https://github.com/user-attachments/assets/aa361c10-ab6f-4b5c-9df6-48a7ce752c45" />
+Left picture is a fractured orbit. Right picture is a reconstructed one using the mirror of the intact contralateral side.
 
-The sample data from the video tutorials are accessible via the Sample Data module of Slicer.The sample skull is segmented from the post dental surgery CBCT skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the Baffle Planner tool of the SlicerHeart extension:  https://github.com/SlicerHeart/SlicerHeart
+
+The tuturial below will only use open-source sample data. The sample data from the video tutorials are accessible via the Sample Data module of Slicer.The sample skull is segmented from the post dental surgery CBCT skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the Baffle Planner tool of the SlicerHeart extension:  https://github.com/SlicerHeart/SlicerHeart
 
 Tutorial (More detailed tutorial will provided soon)
 
@@ -21,29 +29,50 @@ Users can also use this tool to retrieve existing registered plates and adjust p
 2. Generating fit metrics
 The second tab of plate registration is for generating fit metrics. It is highly recommended to first reconstructing the fractured orbit using the mirror image of the intact side. See mirrorOrbitRecon tutorial below for more detail.
 
-Here is a video tutorial:
+Here is a detailed video tutorial:
 Insert video here: https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2
 
-Fit metrics contains two types of data. First, it computes distances between each point of the plate model and the orbital model using the ray casting method (same as in the ModelToModel Distance module in Slicer). For this region, reconstructed orbital model is highly recommended. The fractured orbit is usually very difficult to segment and will have large holes. The distances are stored as scalar values in each vertex of the plate model and can be visualized as heatmap.
+Fit metrics contains two types of data:
+First, it computes distances from the plate surface to the orbit. This is done by using the ray casting method (same as in the ModelToModel Distance module in Slicer). For this region, reconstructed orbital model is highly recommended. The fractured orbit is usually very difficult to segment and will have large holes. The distances are stored as scalar values in each vertex of the plate model and can be visualized as heatmap on the plate model (see tutorial video above).
 
-Second, it projects user-defined plate curve points onto the orbit (reconstructed orbit highly recommended) and measure distances between selected plate margins to the orbit. The curve points can be conveniently placed using Slicer generic Markup module.
+Second, it projects user-defined plate curve points onto the orbit (reconstructed orbit highly recommended) and measure distances between selected plate margins to the orbit. Points on the plate margins and their orbital projections can be convinently visualized using the plateRegistration module (see tutorial video above)
 
-For the below commercial plate, five curves are placed along five margins.
+The curve points can be conveniently placed using Slicer generic Markup module. For the synthetic plate from the sample data, four curves are placed along the peripehral are placed:
+<img width="1178" height="979" alt="image" src="https://github.com/user-attachments/assets/1f1cb61c-3fa5-445d-b5c0-10e45d71e019" />
 
-For the below synthetic plate from the sample data, four curves are placed along the peripehral are placed.
+For the model of a vendor-provided plate, an adiditonal curve is placed along the junction of the medial wall and floor parts of the plate
+<img width="1360" height="1255" alt="Screenshot from 2025-08-26 13-27-34" src="https://github.com/user-attachments/assets/b609423c-5682-47dc-890d-6572862f58d9" />
 
-Users can placed their own curves and alter the density of points along each curve. Please make sure the number of curves and curve densities are consistent across plates for comparison.
+Users can placed their own curves and alter the density of points along each curve. Please make sure the number of curves and point density of each curve are consistent across all plates for comparison.
 
-Users can also visualize point projection and heatamp for each individual plate.
 
 3. Compare fit is done by comparing the mean edges.
-Here is a video tutorial: https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3
+Here is a detailed video tutorial: https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3
 
+Fit are compared and ranked by:
+1) Mean overall plate-orbit distances, which is the mean scalar values (saved as csv as well) of each plate, measured in mm.
+2) The overall mean distance between points on plate margins and their projections on the orbit.
+3) Separate ranking of each plate margin based on mean distances from the points along this margin to their projections on the orbit.
+
+All of these data are stored in csv files and plotted as scatterplots as well (see tutorial above) in /plate/registration/roots/fit_output/compare_fit_output
+<img width="1347" height="679" alt="image" src="https://github.com/user-attachments/assets/8b1cd59a-17be-4fcd-9b84-b0d223a1e260" />
+Below is a sample plot shows the mean distance between points on each plate margin to the orbit from five registered plates represented five plate placement attempts: three using the same large plate, and two using the small plate with a different contour. The accompanied csv shows the actual mean distances as well as the overall mean
+<img width="3000" height="1500" alt="Mean margin-orbit distances" src="https://github.com/user-attachments/assets/3cfc2d3d-f9d4-49f3-abbd-21c62feed259" />
+<img width="2133" height="236" alt="image" src="https://github.com/user-attachments/assets/be11ad78-0d33-4299-b251-8976671e64be" />
+
+This graph and csv shows the distance of all points from one plate margin to their orbital projections across five registered plates. This can facilitate analyze which local regions fit well or not well across different registered plates.
+<img width="3000" height="1500" alt="anterior_floor_point_dists_to_orbit" src="https://github.com/user-attachments/assets/01865398-2296-4e93-861e-b28f2d95cd06" />
+<img width="2678" height="231" alt="image" src="https://github.com/user-attachments/assets/d668d3a3-7cb8-4925-9992-08d0e9d16d63" />
+
+
+Distance map (heatmap) scalar values of each plate are stored in the csv file in plate/registration/roots/fit_output/fit_metrics/plate_folder. The models with scalar values in the vtk format are also saved and can be conveniently retrieved using 
+
+A histogram is also provided to visualize distance ranges of all points of the plate model to the orbit.
 
 4. Facilitate collaborative planning.
-The module can 
+The module can facilitate collaborative planning and education by allowing further modifying
 
-mirrorOrbitRecon module tutorial.
+mirrorOrbitRecon module tutorial (will come soon).
 
 Acknowledgement
 The interaction transform handle is created by Kyle Sunderland, who has also provided many invaluable technical advice and support for this project. Andras Lasso and Steve Pieper has also provided valuable advice for this project.

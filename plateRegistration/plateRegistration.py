@@ -43,7 +43,9 @@ class plateRegistration(ScriptedLoadableModule):
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-        self.parent.contributors = ["Chi Zhang (Texas A&M University College of Dentistry), Kyle Sunderland (Perk Lab, Queen's University), Andrew Read-Fuller (Texas A&M University College of Dentistry)"]  # TODO: replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Chi Zhang (Texas A&M University College of Dentistry), "
+                                    "Andrew Read-Fuller (Texas A&M University College of Dentistry), "
+                                    "Kyle Sunderland (Perk Lab, Queen's University)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
         # _() function marks text as translatable to other languages
         self.parent.helpText = _("""
@@ -56,7 +58,7 @@ Will update soon
 """)
 
         # Additional initialization step after application startup is complete
-        # slicer.app.connect("startupCompleted()", registerSampleData)
+        slicer.app.connect("startupCompleted()", registerSampleData)
 
 
 #
@@ -64,49 +66,55 @@ Will update soon
 #
 
 
-# def registerSampleData():
-#     """Add data sets to Sample Data module."""
-#     # It is always recommended to provide sample data for users to make it easy to try the module,
-#     # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
-# 
-#     import SampleData
-# 
-#     iconsPath = os.path.join(os.path.dirname(__file__), "Resources/Icons")
-# 
-#     # To ensure that the source code repository remains small (can be downloaded and installed quickly)
-#     # it is recommended to store data sets that are larger than a few MB in a Github release.
-# 
-#     # plateRegistration1
-#     SampleData.SampleDataLogic.registerCustomSampleDataSource(
-#         # Category and sample name displayed in Sample Data module
-#         category="plateRegistration",
-#         sampleName="plateRegistration1",
-#         # Thumbnail should have size of approximately 260x280 pixels and stored in Resources/Icons folder.
-#         # It can be created by Screen Capture module, "Capture all views" option enabled, "Number of images" set to "Single".
-#         thumbnailFileName=os.path.join(iconsPath, "plateRegistration1.png"),
-#         # Download URL and target file name
-#         uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
-#         fileNames="plateRegistration1.nrrd",
-#         # Checksum to ensure file integrity. Can be computed by this command:
-#         #  import hashlib; print(hashlib.sha256(open(filename, "rb").read()).hexdigest())
-#         checksums="SHA256:998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
-#         # This node name will be used when the data set is loaded
-#         nodeNames="plateRegistration1",
-#     )
-# 
-#     # plateRegistration2
-#     SampleData.SampleDataLogic.registerCustomSampleDataSource(
-#         # Category and sample name displayed in Sample Data module
-#         category="plateRegistration",
-#         sampleName="plateRegistration2",
-#         thumbnailFileName=os.path.join(iconsPath, "plateRegistration2.png"),
-#         # Download URL and target file name
-#         uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
-#         fileNames="plateRegistration2.nrrd",
-#         checksums="SHA256:1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
-#         # This node name will be used when the data set is loaded
-#         nodeNames="plateRegistration2",
-#     )
+def registerSampleData():
+    """Add data sets to Sample Data module."""
+    # It is always recommended to provide sample data for users to make it easy to try the module,
+    # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
+
+    import SampleData
+
+    iconsPath = os.path.join(os.path.dirname(__file__), "Resources/Icons")
+
+    # To ensure that the source code repository remains small (can be downloaded and installed quickly)
+    # it is recommended to store data sets that are larger than a few MB in a Github release.
+
+    # plateRegistration1
+    SampleData.SampleDataLogic.registerCustomSampleDataSource(
+        # Category and sample name displayed in Sample Data module
+        category="orbitPlateRegistration",
+        sampleName="plateRegistrationSampleDataFiles",
+        thumbnailFileName=os.path.join(iconsPath, "plateRegistrationSampleDataIcon.png"),
+        uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/refs/heads/main/plateRegistrationSampleData.zip",
+        loadFiles=False,
+        fileNames="plateRegistrationSampleData.zip",
+        loadFileType='ZipFile',
+        checksums=None,
+        customDownloader=downloadSampleDataInFolder,
+    )
+
+def downloadSampleDataInFolder(source):
+    sampleDataLogic = slicer.modules.sampledata.widgetRepresentation().self().logic
+    # Retrieve directory
+    category = "orbitPlateRegistration"
+    savedDirectory = slicer.app.userSettings().value(
+          "SampleData/Last%sDownloadDirectory" % category,
+          qt.QStandardPaths.writableLocation(qt.QStandardPaths.DocumentsLocation))
+
+    destFolderPath = str(qt.QFileDialog.getExistingDirectory(slicer.util.mainWindow(), 'Destination Folder', savedDirectory))
+    if not os.path.isdir(destFolderPath):
+      return
+    print('Selected data folder: %s' % destFolderPath)
+    for uri, fileName, checksum  in zip(source.uris, source.fileNames, source.checksums):
+      sampleDataLogic.downloadFile(uri, destFolderPath, fileName, checksum)
+
+    # Save directory
+    slicer.app.userSettings().setValue("SampleData/Last%sDownloadDirectory" % category, destFolderPath)
+    filepath=destFolderPath+"/setup.py"
+    if (os.path.exists(filepath)):
+      spec = importlib.util.spec_from_file_location("setup",filepath)
+      setup = importlib.util.module_from_spec(spec)
+      spec.loader.exec_module(setup)
+      setup.setup()
 
 
 @parameterNodeWrapper
@@ -182,6 +190,37 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         # "mrmlSceneChanged(vtkMRMLScene*)" signal in is connected to each MRML widget's.
         # "setMRMLScene(vtkMRMLScene*)" slot.
         uiWidget.setMRMLScene(slicer.mrmlScene)
+
+        #Install pandas
+        needInstall = False
+        try:
+            import pandas
+            import matplotlib
+        except ModuleNotFoundError:
+            needInstall = True
+
+        if needInstall:
+            progressDialog = slicer.util.createProgressDialog(
+                windowTitle="Installing...",
+                labelText="Installing Python dependencies. This may take a minute...",
+                maximum=0,
+            )
+            slicer.app.processEvents()
+            try:
+                slicer.util.pip_install(["pandas"])
+                slicer.util.pip_install(["matplotlib"])
+            except:
+                slicer.util.infoDisplay("Issue while installing the pandas package. Please install it manually.")
+                progressDialog.close()
+
+            progressDialog.close()
+
+        try:
+            import pandas
+            import matplotlib
+        except ModuleNotFoundError as e:
+            print("Module Not found. Please restart Slicer to load packages.")
+
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
@@ -443,10 +482,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
         except:
             pass
-        try:
-            self._parameterNode.orbitModelRecon.GetDisplayNode().SetVisibility(False)
-        except:
-            pass
         if bool(self.ui.orbitReconShComboBox.currentItem()):
             orbitModelReconItemId = self.ui.orbitReconShComboBox.currentItem()
             self._parameterNode.orbitModelRecon = shNode.GetItemDataNode(orbitModelReconItemId)
@@ -655,7 +690,6 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.plateFiducialSelector.enabled = False
         self.ui.posteriorStopRegistrationPushButton.enabled = True
         self.ui.resetAllPushButton.enabled = True
-        self.ui.finalizePlateRegistrationPushButton.enabled = True
         #
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
         self._parameterNode.orbitLm.GetDisplayNode().SetVisibility(True)
@@ -1173,10 +1207,12 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
         if self.ui.modifyPlateCheckBox.isChecked():
+            # print(f'self._parameterNode.plateNameUpdateReg is {self._parameterNode.plateNameUpdateReg}')
             self._parameterNode.interactionPlateModel.SetName(
                 self._parameterNode.plateNameUpdateReg + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.plateNameUpdateReg
         else:
+            # self._parameterNode.interactionPlateModel = self._parameterNode.originalPlateModel
             self._parameterNode.interactionPlateModel.SetName(
                 self._parameterNode.originalPlateModel.GetName() + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
@@ -1274,7 +1310,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.fractureOrbitModel = shNode.GetItemDataNode(orbitModelId)
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
         if interactionFlag == 1:
-            self._parameterNode.interactionPlateModel = shNode.GetItemDataNode(interactionPlateId)
+            # self._parameterNode.interactionPlateModel = shNode.GetItemDataNode(interactionPlateId)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
         else:
             self._parameterNode.rigidRegisteredPlateModel = shNode.GetItemDataNode(rigidPlateModelId)
@@ -1453,69 +1489,71 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
     def onPlateHeatmap(self):
         logic = plateRegistrationLogic()
         plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
+        print(f'plate margin input root dir is {plateMarginInputRootDir}')
         rootDir = os.path.dirname(plateMarginInputRootDir)
         outputRootDir = os.path.join(rootDir, "fit_output", "fit_metrics")
         os.makedirs(outputRootDir, exist_ok=True)
         #
-        plateBaseNames = [
-            name
-            for name in os.listdir(plateMarginInputRootDir)
-            if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
-        ]
+        # plateBaseNames = [
+        #     name
+        #     for name in os.listdir(plateMarginInputRootDir)
+        #     if os.path.isdir(os.path.join(plateMarginInputRootDir, name))
+        # ]
         plateRegDir = os.path.join(rootDir, 'plate_registration_results')
         # registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
         plateRegFolders = [folder for folder in os.listdir(plateRegDir) if
                            os.path.isdir(os.path.join(plateRegDir, folder))]
+        print(f'plate folders are {plateRegFolders}')
         for currentPlateFolderName in plateRegFolders:
-            for baseName in plateBaseNames:
-                if not currentPlateFolderName.startswith(baseName):
-                    continue
-                else:
-                    # finalPlateModelNodeId = registeredPlateInfoDict[currentPlateFolderName]['finalPlateModelNodeID']
-                    # finalPlateModelNode = slicer.mrmlScene.GetNodeByID(finalPlateModelNodeId)
-                    logfile = "plate_registration.log"
-                    logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
-                    with open(logfilepath, "r") as f:
-                        lines = [L.strip() for L in f]
-                    finalPlateFile = lines[0].split(":", 1)[1].strip()
-                    finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
-                    finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
+            # for baseName in plateBaseNames:
+            #     if not currentPlateFolderName.startswith(baseName):
+            #         continue
+            #     else:
+            logfile = "plate_registration.log"
+            logfilepath = os.path.join(plateRegDir, currentPlateFolderName, logfile)
+            print(f'log file path is {logfilepath}')
+            with open(logfilepath, "r") as f:
+                lines = [L.strip() for L in f]
+            finalPlateFile = lines[0].split(":", 1)[1].strip()
+            print(f'final plate file is {finalPlateFile}')
+            finalPlatePath = os.path.join(plateRegDir, currentPlateFolderName, finalPlateFile)
+            finalPlateModelNode = slicer.util.loadModel(finalPlatePath)
 
-                    orbitReconModelNode = self._parameterNode.orbitModelRecon
-                    plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
-                    #
-                    d = finalPlateModelNode.GetDisplayNode()
-                    d.SetScalarVisibility(True)
-                    d.SetActiveScalarName('Distance')
-                    colorTableNode = slicer.util.getNode('RedGreenBlue')
-                    d.SetAndObserveColorNodeID(colorTableNode.GetID())
-                    d.SetScalarRangeFlagFromString('Manual')
-                    d.SetScalarRange(0, 5)
-                    #Save scalar as csv & histogram
-                    scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
-                    scalarArray = np.abs(scalarArray)
+            orbitReconModelNode = self._parameterNode.orbitModelRecon
+            plate_distanceMap, finalPlateModelNode = logic.heatmap(templateMesh = finalPlateModelNode, currentMesh = orbitReconModelNode)
+            #
+            d = finalPlateModelNode.GetDisplayNode()
+            d.SetScalarVisibility(True)
+            d.SetActiveScalarName('Distance')
+            colorTableNode = slicer.util.getNode('RedGreenBlue')
+            d.SetAndObserveColorNodeID(colorTableNode.GetID())
+            d.SetScalarRangeFlagFromString('Manual')
+            d.SetScalarRange(-5, 5)
+            #Save scalar as csv & histogram
+            scalarArray = slicer.util.arrayFromModelPointData(finalPlateModelNode, 'Distance')
+            # scalarArray = np.abs(scalarArray)
 
-                    # Display color legend
-                    colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
-                        finalPlateModelNode)
-                    colorLegendDisplayNode.SetVisibility(True)
-                    labelFormat = "%4.1f mm"
-                    colorLegendDisplayNode.SetLabelFormat(labelFormat)
-                    #
-                    outputDir = os.path.join(outputRootDir, currentPlateFolderName)
-                    os.makedirs(outputDir, exist_ok=True)
-                    logic.plotScalarHistogram(scalarArray, outputDir, baseName, currentPlateFolderName)
-                    #
-                    #Saving in PLY with color table
-                    platePLYName = currentPlateFolderName + "_heatmap.ply"
-                    platePLYPath = os.path.join(outputDir, platePLYName)
-                    logic.savePLYWithScalarTable(finalPlateModelNode, platePLYPath)
-                    #
-                    plateVTKName = currentPlateFolderName + "_heatmap.vtk" #directly saving the scalar with the model
-                    plateVTKPath = os.path.join(outputDir, plateVTKName)
-                    slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
-                    self.ui.compareFitPathLineEdit.currentPath = outputRootDir
-                    slicer.mrmlScene.RemoveNode(finalPlateModelNode)
+            # Display color legend
+            colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
+                finalPlateModelNode)
+            colorLegendDisplayNode.SetVisibility(True)
+            labelFormat = "%4.1f mm"
+            colorLegendDisplayNode.SetLabelFormat(labelFormat)
+            #
+            outputDir = os.path.join(outputRootDir, currentPlateFolderName)
+            os.makedirs(outputDir, exist_ok=True)
+            logic.plotScalarHistogram(scalarArray, outputDir, currentPlateFolderName)
+            #
+            #Saving in PLY with color table
+            platePLYName = currentPlateFolderName + "_heatmap.ply"
+            platePLYPath = os.path.join(outputDir, platePLYName)
+            logic.savePLYWithScalarTable(finalPlateModelNode, platePLYPath)
+            #
+            plateVTKName = currentPlateFolderName + "_heatmap.vtk" #directly saving the scalar with the model
+            plateVTKPath = os.path.join(outputDir, plateVTKName)
+            slicer.util.saveNode(finalPlateModelNode, plateVTKPath)
+            self.ui.compareFitPathLineEdit.currentPath = outputRootDir
+            slicer.mrmlScene.RemoveNode(finalPlateModelNode)
 
 
 
@@ -1534,7 +1572,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         colorTableNode = slicer.util.getNode('RedGreenBlue')
         d.SetAndObserveColorNodeID(colorTableNode.GetID())
         d.SetScalarRangeFlagFromString('Manual')
-        d.SetScalarRange(0, 5)
+        d.SetScalarRange(-5, 5)
         # Display color legend
         colorLegendDisplayNode = slicer.modules.colors.logic().AddDefaultColorLegendDisplayNode(
             plateScalarModelNode)
@@ -1738,7 +1776,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             colorTableNode = slicer.util.getNode('RedGreenBlue')
             d.SetAndObserveColorNodeID(colorTableNode.GetID())
             d.SetScalarRangeFlagFromString('Manual')
-            d.SetScalarRange(0, 5)
+            d.SetScalarRange(-5, 5)
             plateModelItem = shNode.GetItemByDataNode(plateModelNode)
             shNode.SetItemParent(plateModelItem, platesFolderItem)
             # Display color legend
@@ -2129,7 +2167,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         slicer.mrmlScene.RemoveNode(transformNode)
 
 
-    def plotScalarHistogram(self, scalarArray, outputDir, imageTitleBase, imageFileNameBase):
+    def plotScalarHistogram(self, scalarArray, outputDir, imageFileNameBase):
         try:
           import matplotlib
         except ModuleNotFoundError:
@@ -2141,7 +2179,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         import pandas
         # Set the last bin edge to np.inf so that all values >= 5 go into the last bin.
         bins = np.array(list(np.arange(0, 6, 1)) + [np.inf])
-        counts, _ = np.histogram(scalarArray, bins=bins)
+        counts, _ = np.histogram(np.abs(scalarArray), bins=bins)
         percentage = counts / counts.sum() * 100
         # Set the bar positions will be at 0,1,2,3,4,5 with an extra tick label for the last bin.
         plot_bins = np.arange(0, 7)
@@ -2152,12 +2190,12 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # Label the axes and add a title
         ax.set_xlabel('Distance (mm)')
         ax.set_ylabel('Percentage (%)')
-        ax.set_title(imageTitleBase + "_heatmap_distances_to_orbit")
+        ax.set_title("plate_heatmap_distances_to_orbit")
         
         # Set custom x-axis tick labels:
         # Labels 0 through 5 and then the maximum distance value as the last label.
         xtick_labels = [str(x) for x in np.arange(0, 6)]
-        maxScalar = np.round(scalarArray.max(), decimals = 3)
+        maxScalar = np.round(np.abs(scalarArray.max()), decimals = 3)
         xtick_labels.append(str(maxScalar))
         ax.set_xticks(plot_bins)
         ax.set_xticklabels(xtick_labels)
@@ -2197,7 +2235,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         # check if there is a table node has been created
         # numPoints = len(data)
         # uniqueFactors, factorCounts = np.unique(factors, return_counts=True)
-        factorNumber = len(factors)
+        # factorNumber = len(factors)
 
         # Set up chart
         plotChartNode = slicer.mrmlScene.GetFirstNodeByName(
@@ -2223,7 +2261,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             )
             if tableNode is None:
                 tableNode = slicer.mrmlScene.AddNewNodeByClass(
-                    "vtkMRMLTableNode", 
+                    "vtkMRMLTableNode",
                     "Table for the scatterplot " + title + factor
                 )
             else:
@@ -2237,13 +2275,6 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             labels = tableNode.AddColumn()
             labels.SetName("Subject ID")
             tableNode.SetColumnType("Subject ID", vtk.VTK_STRING)
-
-            # axisNum = 2
-            # for i in range(axisNum):
-            #     pc = tableNode.AddColumn()
-            #     colName = "PC" + str(i + 1)
-            #     pc.SetName(colName)
-            #     tableNode.SetColumnType(colName, vtk.VTK_FLOAT)
 
             xAxisCol = tableNode.AddColumn()
             colName = xAxisName
@@ -2261,24 +2292,16 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
             # table.SetNumberOfRows(factorCounts[factorIndex])
             table.SetNumberOfRows(dataArray.shape[1])
 
-            #X = 1:len(dataArray.shape[1])
-            #Y = actual value of each row of the dataArray
-            # for i in range(numPoints):
-            #     if factors[i] == factor:
-            #         table.SetValue(factorCounter, 0, files[i])
-            #         for j in range(pcNumber):
-            #             table.SetValue(factorCounter, j + 1, data[i, j])
-            #         factorCounter += 1
             for j in range(dataArray.shape[1]):
                 table.SetValue(j, 0, subjectID[j])
                 table.SetValue(j, 1, j+1)
                 table.SetValue(j, 2, dataArray[i, j])
-            
 
-            plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(factor)
+            plotSeriesNodeName = f"plotSeriesNode_{factor}"
+            plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName(plotSeriesNodeName)
             if plotSeriesNode is None:
                 plotSeriesNode = slicer.mrmlScene.AddNewNodeByClass(
-                    "vtkMRMLPlotSeriesNode", factor
+                    "vtkMRMLPlotSeriesNode", plotSeriesNodeName
                 )
                 # GPANodeCollection.AddItem(plotSeriesNode)
             # Create data series from table
@@ -2640,7 +2663,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
                 next(reader) #skip the first row, which is 0 for some reasons
                 for row in reader:
                     scalarArray.append(float(row[0]))
-            meanScalar = np.mean(scalarArray)
+            meanScalar = np.mean(np.abs(scalarArray))
             print(f"mean scalar value is {meanScalar}")
             meanScalarArrayList.append(meanScalar)
 
