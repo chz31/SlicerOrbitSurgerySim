@@ -112,31 +112,54 @@ All of these data are stored in CSV files and plotted as scatterplots as well (s
 <img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/8b1cd59a-17be-4fcd-9b84-b0d223a1e260" />
 <sub>Figure 6 </sub><br><sub>the compare fit output folder's content </sub>
 
-Below is a sample plot shows the mean distance between points on each plate margin to the orbit from five registered plates represented five plate placement attempts: three using the same large plate, and two using the small plate with a different contour. The accompanied csv shows the actual mean distances as well as the overall mean
-<img width="3000" height="1500" alt="Mean margin-orbit distances" src="https://github.com/user-attachments/assets/3cfc2d3d-f9d4-49f3-abbd-21c62feed259" />
+Below is a sample plot shows the mean distance between points on each plate margin to the orbital projections from five registered plates represented five plate placement attempts: three using the same large plate, and two using the small plate with a different contour. The accompanied csv shows the actual mean distances as well as the overall mean
+
+<img width="800" height="400" alt="Mean margin-orbit distances" src="https://github.com/user-attachments/assets/3cfc2d3d-f9d4-49f3-abbd-21c62feed259" />
 <img width="2133" height="236" alt="image" src="https://github.com/user-attachments/assets/be11ad78-0d33-4299-b251-8976671e64be" />
 
-This graph and csv shows the distance of all points from one plate margin to their orbital projections across five registered plates. This can facilitate analyze which local regions fit well or not well across different registered plates.
-<img width="3000" height="1500" alt="anterior_floor_point_dists_to_orbit" src="https://github.com/user-attachments/assets/01865398-2296-4e93-861e-b28f2d95cd06" />
+<sub>Figure 7 </sub><br><sub>mean distance between points on each plate margin to the orbital projections</sub>
+<br>
+<br>
+<br>
+The below graph and csv shows the distance of all points from one plate margin to their orbital projections across five registered plates. This can facilitate analyze which local regions fit well or not well across different registered plates.
+
+<img width="1000" height="500" alt="anterior_floor_point_dists_to_orbit" src="https://github.com/user-attachments/assets/01865398-2296-4e93-861e-b28f2d95cd06" />
 <img width="2678" height="231" alt="image" src="https://github.com/user-attachments/assets/d668d3a3-7cb8-4925-9992-08d0e9d16d63" />
 
+<sub>Figure 8 </sub><br><sub>The distance of all points from one plate margin to their orbital projections across five registered plates</sub>
 
-Distance map (heatmap) scalar values of each plate are stored in the csv file in plate/registration/roots/fit_output/fit_metrics/plate_folder. The models with scalar values in the vtk format are also saved and can be conveniently retrieved using 
 
-A histogram is also provided to visualize distance ranges of all points of the plate model to the orbit.
+**Distance map (heatmap)** scalar values of each plate are stored in the CSV file in:
 
-4. Facilitate collaborative planning.
+`plate/registration/roots/fit_output/fit_metrics/plate_folder`
+
+The models with scalar values in the VTK format are saved and can be conveniently retrieved. A **histogram** is also provided to visualize distance ranges of all points of the plate model to the orbit.
+
+<img width="500" height="400" alt="synth_plate_large_left_2025-08-14_12_58_15_heatmap_dists" src="https://github.com/user-attachments/assets/ab113e4f-2712-40bc-8164-eb0d4b86c843" />
+<sub>Figure 9 </sub><br><sub>Histogram shows percentage of points in the plate model allocated different distance ranges according to their distances to the orbit </sub>
+
+
+
+#### 4. Facilitate collaborative planning. 
 Users can also use this tool to retrieve existing registered plates and adjust plate positions. This can facilitate collaborative planning and education. This video tutorial shows how to further editing a preregistered plate.
-(Insert video here: https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+
+Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 4: edit pre-registered plate]([https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+
+[![Tutorial 4: edit pre-registered plate](https://img.youtube.com/vi/EaOGQawftLU/hqdefault.jpg)](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
 
 
-mirrorOrbitRecon module tutorial (will come soon).
+### mirrorOrbitRecon module tutorial
 
-Acknowledgement
-The interaction transform handle is created by Kyle Sunderland, who has also provided many invaluable technical advice and support for this project. Andras Lasso and Steve Pieper has also provided valuable advice for this project.
+*(Will come soon).* 
 
-Dr. Andrew Read-Fuller has provided invaluable clinical insights and advice for this project.
+---
 
-The rigid registration method is from an itk package originally created for the ALPACA module of the SlicerMorph extension developed by Dr. A. Murat Maga's lab. A copy of the license of SlicerMorph extension is provided. The affine deformable registration method is from the  library and is also used in the FastModelALign module of the SlicerMorph extension.
+## Acknowledgement
+
+The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) have also provided valuable advice for this project.
+
+**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project.
+
+The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the **SlicerMorph** extension developed by **Dr. A. Murat Maga**'s lab. A copy of the license of the SlicerMorph extension is provided.
 
 The development is supported by the Seedling Grant from Texas A&M Health Science Center awarded to Chi Zhang.
