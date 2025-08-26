@@ -1,27 +1,53 @@
-The orbitSurgeySim module is used for interactively registered and compare the fit of plates (typically preformed plates) for orbital fracture repair. 
+# orbitSurgerySim — Orbit Surgery Simulation (3D Slicer Extension)
 
+The **orbitSurgerySim** extension is used to **interactively register** and **compare** the fit of plates (typically preformed plates) for orbital fracture repair.
+
+---
+
+## Modules
 At this moment,this extension contains two modules:
 
-1. PlateRegistration module: Users can interactively adjust plate positions and compare different types of preformed plates across vendors or different ways of plate placement of the same plate. Repeatable ways of plate fit metrics are generated for ranking the fit of plates or perform more detailed downstream analysis.
-<img width="1548" height="1455" alt="Screenshot from 2025-08-26 13-05-46" src="https://github.com/user-attachments/assets/1f382ba1-8821-496f-a263-c1d9af1b3922" />
-The above picture illustrates registering 3D model of a vendor-provided plate at the fracture side using the plateRegistration module.
+1. **PlateRegistration**
+   
+   Users can interactively adjust plate positions and compare different types of preformed plates across vendors or different ways of plate placement of the same plate. Repeatable ways of plate fit metrics are generated for ranking the fit of plates or performing more detailed downstream analysis.
 
-3. mirrorOrbitalRecon module: this module uses the mirror model of the unfractured contralateral side to reconstruct orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPCACA/MALPACA and FastModelAlign modules of the SlicerMorph extension: https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file. See tutorials, Acknowledgement, and license for more information.
-<img width="1060" height="863" alt="image" src="https://github.com/user-attachments/assets/a3150e7f-6deb-4f57-a1f4-3c8b02db0efa" />
-<img width="1060" height="863" alt="image" src="https://github.com/user-attachments/assets/aa361c10-ab6f-4b5c-9df6-48a7ce752c45" />
-Left picture is a fractured orbit. Right picture is a reconstructed one using the mirror of the intact contralateral side.
+<img width="300" height="300" alt="Screenshot from 2025-08-26 13-05-46" src="https://github.com/user-attachments/assets/1f382ba1-8821-496f-a263-c1d9af1b3922" />
+
+<sub>Figure 1 </sub><br><sub>The above picture shows a registered 3D model of a preformed plate placed at the fracture side using the plateRegistration module. </sub>
 
 
-The tuturial below will only use open-source sample data. The sample data from the video tutorials are accessible via the Sample Data module of Slicer.The sample skull is segmented from the post dental surgery CBCT skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the Baffle Planner tool of the SlicerHeart extension:  https://github.com/SlicerHeart/SlicerHeart
+2. **mirrorOrbitalRecon**
 
-Tutorial (More detailed tutorial will provided soon)
+   This module uses the mirrored model of the unfractured contralateral side to reconstruct the fractured orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPACA/MALPACA and FastModelAlign modules of the [SlicerMorph extension](https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file). See Tutorials, Acknowledgement, and license for more information.
 
-plateRegistration module tutorial.
-1. Plate registration.
-Plate registration requires placing plates at the surface of the intact peripheral bone of the fracture site. Conventional registration typically produced overlapping between models. This would impact accuracy of virtual planning and fit evaluation. The plateRegistration module utilized the new Slicer tool, Interaction Transform Handle, and utility tools, (e.g., instant intersection markers, collision detection and markers, align posterior stop) to facilitate users to interacytively adjust plate position util resting just above the peripheral bone.
+<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/a3150e7f-6deb-4f57-a1f4-3c8b02db0efa" />
+<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/aa361c10-ab6f-4b5c-9df6-48a7ce752c45" />
+
+<sub>Figure 2 </sub><br><sub>Left picture is a fractured orbit. Right picture is a reconstructed one using the mirror of the intact contralateral side.</sub>
+
+---
+
+## Sample Data
+
+The tutorial below will use open‑source sample data. The sample data from the video tutorials are accessible via the **Sample Data** module of Slicer. The sample skull is segmented from the **post‑dental‑surgery CBCT** skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the **Baffle Planner** tool of the [SlicerHeart extension](https://github.com/SlicerHeart/SlicerHeart)
+
+<img width="300" height="300" alt="Screenshot from 2025-08-14 12-43-18" src="https://github.com/user-attachments/assets/5783fbea-25d2-4f3a-9a03-b665746639b5" />
+
+---
+
+## Tutorial *(More detailed tutorial will be provided soon)*
+
+### PlateRegistration module tutorial
+
+#### 1. Plate registration
+
+Plate registration requires placing plates at the surface of the intact peripheral bone of the fracture site. Conventional registration typically produced overlapping between models. This would impact accuracy of virtual planning and fit evaluation. The PlateRegistration module utilized the new Slicer tool, **Interaction Transform Handle**, and utility tools (e.g., instant intersection markers, collision detection and markers, align posterior stop) to facilitate users to **interactively** adjust plate position until resting just above the peripheral bone.
 
 This video contains detailed instructions and captions about how different plates can be registered and saved for fit comparison.
-(Insert video here: https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+
+[Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 1: plate registration](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+
+[![Tutorial 1: plate registration](https://img.youtube.com/vi/GVo89_oOOGM/hqdefault.jpg)](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
 
 Users can also use this tool to retrieve existing registered plates and adjust plate positions. This can facilitate collaborative planning and education. This video tutorial shows how to further editing a preregistered plate.
 (Insert video here: https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
