@@ -160,6 +160,6 @@ The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab
 
 **Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project.
 
-The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab. A copy of the license of the SlicerMorph extension is provided.
+The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
 
 The development is supported by the Seedling Grant from Texas A&M Health Science Center awarded to Chi Zhang.
