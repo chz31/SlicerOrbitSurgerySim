@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3...3.19.7 FATAL_ERROR)
 
-project(orbitSurgerySim)
+project(SlicerOrbitSurgerySim)
 
 #-----------------------------------------------------------------------------
 # Extension meta-information
@@ -18,8 +18,8 @@ include(${Slicer_USE_FILE})
 
 #-----------------------------------------------------------------------------
 # Extension modules
-add_subdirectory(plateRegistration)
-add_subdirectory(mirrorOrbitRecon)
+add_subdirectory(PlateRegistration)
+add_subdirectory(MirrorOrbitRecon)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

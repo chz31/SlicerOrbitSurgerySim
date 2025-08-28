@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-set(MODULE_NAME mirrorOrbitRecon)
+set(MODULE_NAME MirrorOrbitRecon)
 
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS

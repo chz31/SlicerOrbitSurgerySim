@@ -24,18 +24,18 @@ from slicer import vtkMRMLScalarVolumeNode
 
 
 #
-# mirrorOrbitRecon
+# MirrorOrbitRecon
 #
 
 
-class mirrorOrbitRecon(ScriptedLoadableModule):
+class MirrorOrbitRecon(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = _("mirrorOrbitRecon")  # TODO: make this more human readable by adding spaces
+        self.parent.title = _("MirrorOrbitRecon")  # TODO: make this more human readable by adding spaces
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
@@ -71,7 +71,7 @@ def registerSampleData():
         # Category and sample name displayed in Sample Data module
         category="fractureOrbitMirrorReconstruction",
         sampleName="orbitMirrorReconSampleData",
-        thumbnailFileName=os.path.join(iconsPath, "mirrorOrbitReconSampleData.png"),
+        thumbnailFileName=os.path.join(iconsPath, "MirrorOrbitReconSampleData.png"),
         uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/refs/heads/main/orbiMirrorReconSampleData.zip",
         loadFiles=False,
         fileNames="orbiMirrorReconSampleData.zip",
@@ -106,12 +106,12 @@ def downloadSampleDataInFolder(source):
 
 
 #
-# mirrorOrbitReconParameterNode
+# MirrorOrbitReconParameterNode
 #
 
 
 @parameterNodeWrapper
-class mirrorOrbitReconParameterNode:
+class MirrorOrbitReconParameterNode:
     """
     The parameters needed by module.
 
@@ -130,11 +130,11 @@ class mirrorOrbitReconParameterNode:
 
 
 #
-# mirrorOrbitReconWidget
+# MirrorOrbitReconWidget
 #
 
 
-class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class MirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
@@ -153,7 +153,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath("UI/mirrorOrbitRecon.ui"))
+        uiWidget = slicer.util.loadUI(self.resourcePath("UI/MirrorOrbitRecon.ui"))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -212,7 +212,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = mirrorOrbitReconLogic()
+        self.logic = MirrorOrbitReconLogic()
 
         # Connections
 
@@ -336,7 +336,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.mirroredSkullRigidNode.SetName(self.mirroredSkullModelNode.GetName() + "_rigid")
 
         #Perfrom itk rigid registration
-        logic = mirrorOrbitReconLogic()
+        logic = MirrorOrbitReconLogic()
         self.sourcePoints, self.targetPoints, scalingTransformNode, ICPTransformNode = logic.ITKRegistration(self.mirroredSkullRigidNode,
                                                                                                    self.originalSkullModelNode,
                                                                                                    scalingOption=False,
@@ -362,7 +362,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.mirroredSkullAffineNode.GetDisplayNode().SetColor(0, 1, 0) #blue
         # self.mirroredSkullAffineNode.GetDisplayNode().SetShading(True)
         #Affine deformable registration
-        logic = mirrorOrbitReconLogic()
+        logic = MirrorOrbitReconLogic()
         transformation, translation = logic.CPDAffineTransform(self.mirroredSkullAffineNode, self.sourcePoints, self.targetPoints)
         matrix_vtk = vtk.vtkMatrix4x4()
         for i in range(3):
@@ -456,7 +456,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onRigidMirroredHalfButton(self):
         #Perfrom itk rigid registration
         self.halfModelRigidNode.SetName(self.mirroredSkullModelNode.GetName() + "_half_rigid")
-        logic = mirrorOrbitReconLogic()
+        logic = MirrorOrbitReconLogic()
         self.sourcePointsHalf, self.targetPointsHalf, halfScalingTransformNode, halfICPTransformNode = logic.ITKRegistration(self.halfModelRigidNode,
                                                                                                    self.halfOriginalNode,
                                                                                                    scalingOption=False,
@@ -491,7 +491,7 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.halfModelaffineNode.GetDisplayNode().SetColor(0, 0, 1) #blue
         # self.halfModelaffineNode.GetDisplayNode().SetShading(True)
         #Affine deformable registration
-        logic = mirrorOrbitReconLogic()
+        logic = MirrorOrbitReconLogic()
         transformation, translation = logic.CPDAffineTransform(self.halfModelaffineNode, self.sourcePoints, self.targetPoints)
         matrix_vtk = vtk.vtkMatrix4x4()
         for i in range(3):
@@ -570,11 +570,11 @@ class mirrorOrbitReconWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 #
-# mirrorOrbitReconLogic
+# MirrorOrbitReconLogic
 #
 
 
-class mirrorOrbitReconLogic(ScriptedLoadableModuleLogic):
+class MirrorOrbitReconLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
     computation done by your module.  The interface
     should be such that other python code can import
@@ -591,7 +591,7 @@ class mirrorOrbitReconLogic(ScriptedLoadableModuleLogic):
         ScriptedLoadableModuleLogic.__init__(self)
 
     def getParameterNode(self):
-        return mirrorOrbitReconParameterNode(super().getParameterNode())
+        return MirrorOrbitReconParameterNode(super().getParameterNode())
 
     def ITKRegistration(self, sourceModelNode, targetModelNode, scalingOption, parameterDictionary, usePoisson):
         #This function is reused from the ALPACA module of SlicerMorph (https://github.com/SlicerMorph/SlicerMorph/tree/master)
@@ -1587,11 +1587,11 @@ class mirrorOrbitReconLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# mirrorOrbitReconTest
+# MirrorOrbitReconTest
 #
 
 
-class mirrorOrbitReconTest(ScriptedLoadableModuleTest):
+class MirrorOrbitReconTest(ScriptedLoadableModuleTest):
     """
     This is the test case for your scripted module.
     Uses ScriptedLoadableModuleTest base class, available at:
@@ -1605,9 +1605,9 @@ class mirrorOrbitReconTest(ScriptedLoadableModuleTest):
     def runTest(self):
         """Run as few or as many tests as needed here."""
         self.setUp()
-        self.test_mirrorOrbitRecon1()
+        self.test_MirrorOrbitRecon1()
 
-    def test_mirrorOrbitRecon1(self):
+    def test_MirrorOrbitRecon1(self):
         """Ideally you should have several levels of tests.  At the lowest level
         tests should exercise the functionality of the logic with different inputs
         (both valid and invalid).  At higher levels your tests should emulate the
@@ -1626,7 +1626,7 @@ class mirrorOrbitReconTest(ScriptedLoadableModuleTest):
         import SampleData
 
         registerSampleData()
-        inputVolume = SampleData.downloadSample("mirrorOrbitRecon1")
+        inputVolume = SampleData.downloadSample("MirrorOrbitRecon1")
         self.delayDisplay("Loaded test data set")
 
         inputScalarRange = inputVolume.GetImageData().GetScalarRange()
@@ -1638,7 +1638,7 @@ class mirrorOrbitReconTest(ScriptedLoadableModuleTest):
 
         # Test the module logic
 
-        logic = mirrorOrbitReconLogic()
+        logic = MirrorOrbitReconLogic()
 
         # Test algorithm with non-inverted threshold
         logic.process(inputVolume, outputVolume, threshold, True)
