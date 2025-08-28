@@ -1,4 +1,4 @@
-# orbitSurgerySim — Orbit Surgery Simulation (3D Slicer Extension)
+# SlicerOrbitSurgerySim — A 3D Slicer Extension for orbital surgery simulation and planning
 
 The **orbitSurgerySim** extension is used to interactively register and compare the fit of surgical plates (typically preformed plates) for repairing orbital fractures (usually caused by blunt force trauma). There are different types of plates with different contours and from different vendors. For how preformed and customzed plates are used for repairing orbital fractures, see this [introduction](https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction).
 
