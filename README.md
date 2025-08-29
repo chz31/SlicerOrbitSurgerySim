@@ -165,7 +165,7 @@ Video tutorial:
 
 The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) have also provided valuable advice for this project.
 
-**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project. **Braedon Gunn** (Texas A&M College of Dentistry) has meticulously segmented many fractured orbital bones that paved the road for this project and tested the module on multiple patient data.
+**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project. **Braedon Gunn** (Texas A&M College of Dentistry) has meticulously segmented many fractured orbital bones that paved the road for this project and tested the extension on multiple patient scans.
 
 The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
 
