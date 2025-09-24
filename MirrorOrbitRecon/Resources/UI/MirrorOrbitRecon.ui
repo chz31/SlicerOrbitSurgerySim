@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>mirrorOrbitRecon</class>
- <widget class="qMRMLWidget" name="mirrorOrbitRecon">
+ <class>MirrorOrbitRecon</class>
+ <widget class="qMRMLWidget" name="MirrorOrbitRecon">
   <property name="geometry">
    <rect>
     <x>0</x>

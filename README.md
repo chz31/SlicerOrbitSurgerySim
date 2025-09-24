@@ -1,4 +1,4 @@
-# orbitSurgerySim — Orbit Surgery Simulation (3D Slicer Extension)
+# SlicerOrbitSurgerySim — A 3D Slicer Extension for orbital surgery simulation and planning
 
 The **orbitSurgerySim** extension is used to interactively register and compare the fit of surgical plates (typically preformed plates) for repairing orbital fractures (usually caused by blunt force trauma). There are different types of plates with different contours and from different vendors. For how preformed and customzed plates are used for repairing orbital fractures, see this [introduction](https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction).
 
@@ -143,14 +143,21 @@ The models with scalar values in the VTK format are saved and can be convenientl
 #### 4. Facilitate collaborative planning. 
 Users can also use this tool to retrieve existing registered plates and adjust plate positions. This can facilitate collaborative planning and education. This video tutorial shows how to further editing a preregistered plate.
 
-Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 4: edit pre-registered plate]([https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+Video tutorial: 
+[Tutorial 4: edit pre-registered plate](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
 
 [![Tutorial 4: edit pre-registered plate](https://img.youtube.com/vi/EaOGQawftLU/hqdefault.jpg)](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
 
 
+
 ### mirrorOrbitRecon module tutorial
 
-*(Will come soon).* 
+Video tutorial for register mirrored whole skull and half skull (from sample data) to the fractured side for reconstruction:
+Video tutorial: 
+[mirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
+
+[![mirrorOrbitRecon tutorial](https://img.youtube.com/vi/t951sCvk_lc/hqdefault.jpg)](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
+
 
 ---
 
@@ -158,7 +165,7 @@ Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tut
 
 The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) have also provided valuable advice for this project.
 
-**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project.
+**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project. **Braedon Gunn** (Texas A&M College of Dentistry) has meticulously segmented many fractured orbital bones that paved the road for this project and tested the extension on multiple patient scans.
 
 The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
 

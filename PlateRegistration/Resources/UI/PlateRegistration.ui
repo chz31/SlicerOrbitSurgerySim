@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>plateRegistrationAndFit</class>
- <widget class="qMRMLWidget" name="plateRegistrationAndFit">
+ <class>PlateRegistrationAndFit</class>
+ <widget class="qMRMLWidget" name="PlateRegistrationAndFit">
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -695,7 +695,7 @@
       </attribute>
       <layout class="QVBoxLayout" name="advancedSettingsLayout">
        <item>
-        <widget class="qMRMLSubjectHierarchyTreeView" name="SubjectHierarchyTreeView">
+        <widget class="qMRMLSubjectHierarchyTreeView" name="plateFitMetricsSubjectHierarchyTreeView">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
            <horstretch>0</horstretch>
@@ -1071,22 +1071,5 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>plateRegistrationAndFit</sender>
-   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
-   <receiver>SubjectHierarchyTreeView</receiver>
-   <slot>setMRMLScene(vtkMRMLScene*)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>544</x>
-     <y>775</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>281</x>
-     <y>478</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

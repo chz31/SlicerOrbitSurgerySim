@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-set(MODULE_NAME plateRegistration)
+set(MODULE_NAME PlateRegistration)
 
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS

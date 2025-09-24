@@ -28,18 +28,18 @@ from slicer import vtkMRMLModelNode, vtkMRMLTransformNode, vtkMRMLMarkupsFiducia
 import json
 
 #
-# plateRegistration
+# PlateRegistration
 #
 
 
-class plateRegistration(ScriptedLoadableModule):
+class PlateRegistration(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = _("plateRegistration")  # TODO: make this more human readable by adding spaces
+        self.parent.title = _("PlateRegistration")  # TODO: make this more human readable by adding spaces
         # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
@@ -50,7 +50,7 @@ class plateRegistration(ScriptedLoadableModule):
         # _() function marks text as translatable to other languages
         self.parent.helpText = _("""
 This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#plateRegistration">module documentation</a>.
+See more information in <a href="https://github.com/organization/projectname#PlateRegistration">module documentation</a>.
 """)
         # TODO: replace with organization, grant and thanks
         self.parent.acknowledgementText = _("""
@@ -78,15 +78,15 @@ def registerSampleData():
     # To ensure that the source code repository remains small (can be downloaded and installed quickly)
     # it is recommended to store data sets that are larger than a few MB in a Github release.
 
-    # plateRegistration1
+    # PlateRegistration1
     SampleData.SampleDataLogic.registerCustomSampleDataSource(
         # Category and sample name displayed in Sample Data module
         category="orbitPlateRegistration",
-        sampleName="plateRegistrationSampleDataFiles",
-        thumbnailFileName=os.path.join(iconsPath, "plateRegistrationSampleDataIcon.png"),
+        sampleName="PlateRegistrationSampleDataFiles",
+        thumbnailFileName=os.path.join(iconsPath, "PlateRegistrationSampleDataIcon.png"),
         uris="https://github.com/chz31/orbitSurgeySim_sampleData/raw/refs/heads/main/plateRegistrationSampleData.zip",
         loadFiles=False,
-        fileNames="plateRegistrationSampleData.zip",
+        fileNames="PlateRegistrationSampleData.zip",
         loadFileType='ZipFile',
         checksums=None,
         customDownloader=downloadSampleDataInFolder,
@@ -118,7 +118,7 @@ def downloadSampleDataInFolder(source):
 
 
 @parameterNodeWrapper
-class plateRegistrationParameterNode:
+class PlateRegistrationParameterNode:
     """
     The parameters needed by module.
 
@@ -159,11 +159,11 @@ class plateRegistrationParameterNode:
 
 
 #
-# plateRegistrationWidget
+# PlateRegistrationWidget
 #
 
 
-class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """Uses ScriptedLoadableModuleWidget base class, available at:
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
@@ -182,7 +182,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         # Load widget from .ui file (created by Qt Designer).
         # Additional widgets can be instantiated manually and added to self.layout.
-        uiWidget = slicer.util.loadUI(self.resourcePath("UI/plateRegistration.ui"))
+        uiWidget = slicer.util.loadUI(self.resourcePath("UI/PlateRegistration.ui"))
         self.layout.addWidget(uiWidget)
         self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -224,7 +224,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = plateRegistrationLogic()
+        self.logic = PlateRegistrationLogic()
 
         # Connections
 
@@ -289,6 +289,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
 
         #Plate fit metrics tab connection
+        self.ui.plateFitMetricsSubjectHierarchyTreeView.setMRMLScene(slicer.mrmlScene)
         self.ui.platePtsBatchPathLineEdit.connect("currentPathChanged(QString)", self.onEnablePtsProjection)
         self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onEnablePtsProjection)
         self.ui.orbitReconShComboBox.connect('currentItemChanged(vtkIdType)', self.onVisualizeOrbitRecon)
@@ -355,7 +356,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.setParameterNode(self.logic.getParameterNode())
 
 
-    def setParameterNode(self, inputParameterNode: Optional[plateRegistrationParameterNode]) -> None:
+    def setParameterNode(self, inputParameterNode: Optional[PlateRegistrationParameterNode]) -> None:
         """
         Set and observe parameter node.
         Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
@@ -508,7 +509,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.showAllMarginPtsPushButton.enabled = False
 
     def onPlaceOrbitLmPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         # Create a point list
         self._parameterNode.orbitLm = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
@@ -519,7 +520,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         logic.placeLm(self._parameterNode.orbitLm)
 
     def onPlacePlateLmPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         # Create a point list
         self._parameterNode.originalPlateLm = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
@@ -659,7 +660,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.interactionTransformCheckbox.enabled = True
 
     def onInitialRegistrationPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         #
         initial_transform = logic.rigid_transform(self._parameterNode.originalPlateLm, self._parameterNode.orbitLm)
@@ -722,7 +723,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onRotation_p_stop_pushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         align_p_stop_transform = logic.align_p_stop(self._parameterNode.registeredPlateLm, self._parameterNode.orbitLm)
         print(align_p_stop_transform)
         self._parameterNode.alignPosteriorStopTransform =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "align_p_stop_transform")
@@ -882,7 +883,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             colorLegendDisplayNode.SetVisibility(False)
         except:
             pass
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         print("timeout")
         if self.ui.instantCollisionDetectionCheckBox.isChecked():
             # Computer instant collision number of points
@@ -1008,7 +1009,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
     def onCreateIntersectButton(self):
         self.ui.interactionTransformCheckbox.enabled = False
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         try:
             slicer.mrmlScene.RemoveNode(self.intersectionModel)
         except:
@@ -1049,7 +1050,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onInstantHeatMap(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
         plate_distanceMap2, self._parameterNode.interactionPlateModel = logic.heatmap(templateMesh=self._parameterNode.interactionPlateModel,
                                                                  currentMesh=self._parameterNode.fractureOrbitModel)
@@ -1194,7 +1195,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #Update folder Name
 
         # Get display node IDs
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         interactionFlag = self.ui.interactionTransformCheckbox.checked
         if interactionFlag == 1:
@@ -1319,7 +1320,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onSaveCurrentRegPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         resultsFolderName = self._parameterNode.plateRegFolderName
         outputPath = self.ui.currentRegResultsPathLineEdit.currentPath
         outputFolder = os.path.join(outputPath, resultsFolderName)
@@ -1344,7 +1345,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onSaveAllRegPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
         dict_keys = registeredPlateInfoDict.keys()
         print(f"existing folders are {dict_keys}")
@@ -1395,7 +1396,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onProjectPtsBatchScene(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
         rootDir = os.path.dirname(plateMarginInputRootDir)
@@ -1487,7 +1488,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onPlateHeatmap(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         plateMarginInputRootDir = self.ui.platePtsBatchPathLineEdit.currentPath
         print(f'plate margin input root dir is {plateMarginInputRootDir}')
         rootDir = os.path.dirname(plateMarginInputRootDir)
@@ -1619,7 +1620,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onCompareFitPushButton(self):
-        logic = plateRegistrationLogic()
+        logic = PlateRegistrationLogic()
         #Retrieve files from the output root
         fitMetricsDir = self.ui.compareFitPathLineEdit.currentPath
         fitOutputRootDir = os.path.dirname(fitMetricsDir)
@@ -1811,7 +1812,7 @@ class plateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 #
 
 
-class plateRegistrationLogic(ScriptedLoadableModuleLogic):
+class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
     """This class should implement all the actual
     computation done by your module.  The interface
     should be such that other python code can import
@@ -1826,7 +1827,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
         ScriptedLoadableModuleLogic.__init__(self)
 
     def getParameterNode(self):
-        return plateRegistrationParameterNode(super().getParameterNode())
+        return PlateRegistrationParameterNode(super().getParameterNode())
 
     def placeLm(self, lmNode):
         lmNodeId = lmNode.GetID()
@@ -2697,11 +2698,11 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 
 
 #
-# plateRegistrationTest
+# PlateRegistrationTest
 #
 
 
-# class plateRegistrationTest(ScriptedLoadableModuleTest):
+# class PlateRegistrationTest(ScriptedLoadableModuleTest):
 #     """
 #     This is the test case for your scripted module.
 #     Uses ScriptedLoadableModuleTest base class, available at:
@@ -2715,9 +2716,9 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 #     def runTest(self):
 #         """Run as few or as many tests as needed here."""
 #         self.setUp()
-#         self.test_plateRegistration1()
+#         self.test_PlateRegistration1()
 # 
-#     def test_plateRegistration1(self):
+#     def test_PlateRegistration1(self):
 #         """Ideally you should have several levels of tests.  At the lowest level
 #         tests should exercise the functionality of the logic with different inputs
 #         (both valid and invalid).  At higher levels your tests should emulate the
@@ -2736,7 +2737,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 #         import SampleData
 # 
 #         registerSampleData()
-#         inputVolume = SampleData.downloadSample("plateRegistration1")
+#         inputVolume = SampleData.downloadSample("PlateRegistration1")
 #         self.delayDisplay("Loaded test data set")
 # 
 #         inputScalarRange = inputVolume.GetImageData().GetScalarRange()
@@ -2748,7 +2749,7 @@ class plateRegistrationLogic(ScriptedLoadableModuleLogic):
 # 
 #         # Test the module logic
 # 
-#         logic = plateRegistrationLogic()
+#         logic = PlateRegistrationLogic()
 # 
 #         # Test algorithm with non-inverted threshold
 #         logic.process(inputVolume, outputVolume, threshold, True)
