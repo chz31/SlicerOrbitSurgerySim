@@ -9,7 +9,7 @@ set(EXTENSION_CONTRIBUTORS "Chi Zhang (Texas A&M Dentistry), Kyle Sunderland (Pe
 set(EXTENSION_DESCRIPTION "orbitSurgerySim is for interactively registering and comparing the fit of surgical plates for orbital fracture repair.")
 set(EXTENSION_ICONURL "https://raw.githubusercontent.com/chz31/SlicerOrbitSurgerySim/main/orbitSurgerySim.png")
 set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/chz31/SlicerOrbitSurgerySim/main/orbitSurgerySimScreeshot.png")
-set(EXTENSION_DEPENDS "NA") # Specified as a list or "NA" if no dependencies
+set(EXTENSION_DEPENDS "SlicerMorph") # Specified as a list or "NA" if no dependencies
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
