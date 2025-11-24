@@ -568,26 +568,6 @@
              <string>Reset/Finalize/Save</string>
             </property>
             <layout class="QFormLayout" name="formLayout">
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_4">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Select dir for saving the current plate registration results: </string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Select dir for saving plate registration results for all the plates in the scene:</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="0" colspan="2">
               <widget class="QPushButton" name="resetAllPushButton">
                <property name="enabled">
@@ -614,35 +594,16 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0" colspan="2">
-              <widget class="QPushButton" name="saveCurrentRegPushButton">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_4">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Save current plate registratio results</string>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="0" colspan="2">
-              <widget class="QPushButton" name="saveAllRegPushButton">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Save All</string>
+                <string>Select a root directory for saving the current plate registration result:: </string>
                </property>
               </widget>
              </item>
@@ -658,7 +619,7 @@
                 </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>Choose a directory to save the current plate registration results.</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose a root directory to save the current plate registration results.This will create a subfolder &amp;quot;plate_registration_results&amp;quot; to store the current registration results and future results in the same scene. It will also create a &amp;quot;points_for_projection&amp;quot; subfolder for generating fit metrics.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="label">
                 <string>Choose a directory</string>
@@ -671,13 +632,19 @@
                </property>
               </widget>
              </item>
-             <item row="7" column="0" colspan="2">
-              <widget class="ctkPathLineEdit" name="saveAllRegPathLineEdit">
+             <item row="4" column="0" colspan="2">
+              <widget class="QPushButton" name="saveCurrentRegPushButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
-               <property name="filters">
-                <set>ctkPathLineEdit::Dirs</set>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Save current plate registratio results</string>
                </property>
               </widget>
              </item>
