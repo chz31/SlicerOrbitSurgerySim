@@ -207,7 +207,7 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             )
             slicer.app.processEvents()
             try:
-                slicer.util.pip_install(["pandas"])
+                slicer.util.pip_install(["pandas<2.3.0"])
                 slicer.util.pip_install(["matplotlib"])
             except:
                 slicer.util.infoDisplay("Issue while installing the pandas package. Please install it manually.")
@@ -586,13 +586,13 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             sceneItemID, self._parameterNode.plateRegFolderName
         )
 
-        # 🔒 Block selector signals while reparenting items
-        blockers = [
-            qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
-            qt.QSignalBlocker(self.ui.orbitFiducialSelector),
-            qt.QSignalBlocker(self.ui.plateModelSelector),
-            qt.QSignalBlocker(self.ui.plateFiducialSelector),
-        ]
+        # # 🔒 Block selector signals while reparenting items
+        # blockers = [
+        #     qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
+        #     qt.QSignalBlocker(self.ui.orbitFiducialSelector),
+        #     qt.QSignalBlocker(self.ui.plateModelSelector),
+        #     qt.QSignalBlocker(self.ui.plateFiducialSelector),
+        # ]
 
         shNode.SetItemParent(plateModelItem, self.plateRegistrationFolder)
 
@@ -710,13 +710,13 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             sceneItemID, self._parameterNode.plateRegFolderName
         )
 
-        # 🔒 Block selector signals while reparenting items
-        blockers = [
-            qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
-            qt.QSignalBlocker(self.ui.orbitFiducialSelector),
-            qt.QSignalBlocker(self.ui.plateModelSelector),
-            qt.QSignalBlocker(self.ui.plateFiducialSelector),
-        ]
+        # # 🔒 Block selector signals while reparenting items
+        # blockers = [
+        #     qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
+        #     qt.QSignalBlocker(self.ui.orbitFiducialSelector),
+        #     qt.QSignalBlocker(self.ui.plateModelSelector),
+        #     qt.QSignalBlocker(self.ui.plateFiducialSelector),
+        # ]
 
         plateModelItem = self.folderNode.GetItemByDataNode(self._parameterNode.rigidRegisteredPlateModel)
         self.folderNode.SetItemParent(plateModelItem, self.plateRegistrationFolder)
