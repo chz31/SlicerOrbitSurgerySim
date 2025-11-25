@@ -285,8 +285,8 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         self.ui.currentRegResultsPathLineEdit.connect("currentPathChanged(QString)", self.onCurrentRegResultsPathLineEdit)
         self.ui.saveCurrentRegPushButton.connect('clicked(bool)', self.onSaveCurrentRegPushButton)
-        self.ui.saveAllRegPathLineEdit.connect("currentPathChanged(QString)", self.onSaveAllRegPathLineEdit)
-        self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
+        # self.ui.saveAllRegPathLineEdit.connect("currentPathChanged(QString)", self.onSaveAllRegPathLineEdit)
+        # self.ui.saveAllRegPushButton.connect('clicked(bool)', self.onSaveAllRegPushButton)
 
         #Plate fit metrics tab connection
         self.ui.plateFitMetricsSubjectHierarchyTreeView.setMRMLScene(slicer.mrmlScene)
@@ -460,12 +460,12 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.ui.saveCurrentRegPushButton.enabled = False
         # self.ui.saveCurrentRegPushButton.enabled = bool(self.ui.currentRegResultsPathLineEdit.currentPath)
 
-    def onSaveAllRegPathLineEdit(self):
-        # self.ui.bool.saveAllRegPushButton.enabled = bool(self.ui.saveAllRegPathLineEdit.currentPath)
-        if self.ui.saveAllRegPathLineEdit.currentPath:
-            self.ui.saveAllRegPushButton.enabled = True
-        else:
-            self.ui.saveAllRegPushButton.enabled = False
+    # def onSaveAllRegPathLineEdit(self):
+    #     # self.ui.bool.saveAllRegPushButton.enabled = bool(self.ui.saveAllRegPathLineEdit.currentPath)
+    #     if self.ui.saveAllRegPathLineEdit.currentPath:
+    #         self.ui.saveAllRegPushButton.enabled = True
+    #     else:
+    #         self.ui.saveAllRegPushButton.enabled = False
 
 
     def onEnablePtsProjection(self):
@@ -585,6 +585,15 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.plateRegistrationFolder = shNode.CreateFolderItem(
             sceneItemID, self._parameterNode.plateRegFolderName
         )
+
+        # 🔒 Block selector signals while reparenting items
+        blockers = [
+            qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
+            qt.QSignalBlocker(self.ui.orbitFiducialSelector),
+            qt.QSignalBlocker(self.ui.plateModelSelector),
+            qt.QSignalBlocker(self.ui.plateFiducialSelector),
+        ]
+
         shNode.SetItemParent(plateModelItem, self.plateRegistrationFolder)
 
         print(lines[4])
@@ -685,13 +694,6 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self._parameterNode.rigidRegisteredPlateModel.SetAndObserveTransformNodeID(self._parameterNode.initialRigidTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.rigidRegisteredPlateModel)
         #
-        self.ui.inputOrbitModelSelector.enabled = False
-        self.ui.orbitFiducialSelector.enabled = False
-        self.ui.plateModelSelector.enabled = False
-        self.ui.plateFiducialSelector.enabled = False
-        self.ui.posteriorStopRegistrationPushButton.enabled = True
-        self.ui.resetAllPushButton.enabled = True
-        #
         self._parameterNode.fractureOrbitModel.GetDisplayNode().SetVisibility(True)
         self._parameterNode.orbitLm.GetDisplayNode().SetVisibility(True)
         self._parameterNode.originalPlateLm.GetDisplayNode().SetVisibility(False)
@@ -707,12 +709,30 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.plateRegistrationFolder = self.folderNode.CreateFolderItem(
             sceneItemID, self._parameterNode.plateRegFolderName
         )
+
+        # 🔒 Block selector signals while reparenting items
+        blockers = [
+            qt.QSignalBlocker(self.ui.inputOrbitModelSelector),
+            qt.QSignalBlocker(self.ui.orbitFiducialSelector),
+            qt.QSignalBlocker(self.ui.plateModelSelector),
+            qt.QSignalBlocker(self.ui.plateFiducialSelector),
+        ]
+
         plateModelItem = self.folderNode.GetItemByDataNode(self._parameterNode.rigidRegisteredPlateModel)
         self.folderNode.SetItemParent(plateModelItem, self.plateRegistrationFolder)
         initialTransformItem = self.folderNode.GetItemByDataNode(self._parameterNode.initialRigidTransform)
         self.folderNode.SetItemParent(initialTransformItem, self.plateRegistrationFolder)
         rigidPlateLmItem = self.folderNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
         self.folderNode.SetItemParent(rigidPlateLmItem, self.plateRegistrationFolder)
+        #
+        # print(f'parameter node orbitLm check 8 {self._parameterNode.orbitLm}')
+        #
+        self.ui.inputOrbitModelSelector.enabled = False
+        self.ui.orbitFiducialSelector.enabled = False
+        self.ui.plateModelSelector.enabled = False
+        self.ui.plateFiducialSelector.enabled = False
+        self.ui.posteriorStopRegistrationPushButton.enabled = True
+        self.ui.resetAllPushButton.enabled = True
         #
         self.ui.initialRegistrationPushButton.enabled = False
         self.ui.placeOrbitLmPushButton.enabled = False
@@ -1275,11 +1295,12 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.modifyPlateCheckBox.checked = 0
 
         self.ui.currentRegResultsPathLineEdit.enabled = True
-        self.ui.saveAllRegPathLineEdit.enabled = True
-        if self.ui.saveAllRegPathLineEdit.currentPath:
-            self.ui.saveAllRegPushButton.enabled = True
-        else:
-            pass
+        self.onCurrentRegResultsPathLineEdit()
+        # self.ui.saveAllRegPathLineEdit.enabled = True
+        # if self.ui.saveAllRegPathLineEdit.currentPath:
+        #     self.ui.saveAllRegPushButton.enabled = True
+        # else:
+        #     pass
         #
         #
         self.ui.inputOrbitModelSelector.enabled = True
@@ -1322,15 +1343,17 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
     def onSaveCurrentRegPushButton(self):
         logic = PlateRegistrationLogic()
         resultsFolderName = self._parameterNode.plateRegFolderName
-        outputPath = self.ui.currentRegResultsPathLineEdit.currentPath
-        outputFolder = os.path.join(outputPath, resultsFolderName)
+        outputRoot = self.ui.currentRegResultsPathLineEdit.currentPath
+        allPlateRegOutDir = os.path.join(outputRoot, 'plate_registration_results')
+        currentPlateOutputDir = os.path.join(allPlateRegOutDir, resultsFolderName)
         slicer.app.ioManager().addDefaultStorageNodes()
-        logic.exportCurrentFolder(self.plateRegistrationFolder, outputFolder)
-        self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
-        self.onCurrentRegResultsPathLineEdit() #disable save button
+        logic.exportCurrentFolder(self.plateRegistrationFolder, currentPlateOutputDir)
+        # self.ui.currentRegResultsPathLineEdit.setCurrentPath("")
+        # self.onCurrentRegResultsPathLineEdit() #disable save button
         self.ui.currentRegResultsPathLineEdit.enabled = False
+        self.ui.saveCurrentRegPushButton.enabled = False
         logFileName = "plate_registration.log"
-        logFilePath = os.path.join(outputFolder, logFileName)
+        logFilePath = os.path.join(currentPlateOutputDir, logFileName)
         with open(logFilePath, "w") as f:
             f.write("final registered plate file name: " + self._parameterNode.interactionPlateModel.GetName() + ".ply" + "\n")
             f.write("final registered plate MRML node ID: " + self._parameterNode.interactionPlateModel.GetID() + "\n")
@@ -1342,57 +1365,61 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             f.write("align posterior stop transform: " + self._parameterNode.alignPosteriorStopTransform.GetName() + ".h5" + "\n")
             f.write("posterior stop rotation rigid transform: " + self._parameterNode.pStopRotationTransform.GetName() + ".h5" + "\n")
             f.write("interaction transform: " +  "interaction_transform.h5" + "\n")
-
-
-    def onSaveAllRegPushButton(self):
-        logic = PlateRegistrationLogic()
-        registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
-        dict_keys = registeredPlateInfoDict.keys()
-        print(f"existing folders are {dict_keys}")
-        allOutRoot = self.ui.saveAllRegPathLineEdit.currentPath
-        allOutDir = os.path.join(allOutRoot, 'plate_registration_results')
-        os.makedirs(allOutDir, exist_ok=True)
-        for key in dict_keys:
-            currentFolderName = key
-            outputDir = os.path.join(allOutDir, currentFolderName)
-            interactionPlateModelId = registeredPlateInfoDict[currentFolderName]["finalPlateModelNodeID"]
-            interactionPlateModelNode = slicer.mrmlScene.GetNodeByID(interactionPlateModelId)
-            fullTransformNodeID = registeredPlateInfoDict[currentFolderName]["fullTransformNodeID"]
-            fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
-            currentFoldeItemId = registeredPlateInfoDict[currentFolderName]["folderItemID"]
-            slicer.app.ioManager().addDefaultStorageNodes()
-            logic.exportCurrentFolder(currentFoldeItemId, outputDir)
-            logFileName = "plate_registration.log"
-            logFilePath = os.path.join(outputDir, logFileName)
-            # logFilePath = os.path.join(outputFolder, logFileName)
-            rigidModelName = interactionPlateModelNode.GetName().removesuffix('_final') + '_rigid_registered'
-            rigidLmName = interactionPlateModelNode.GetName().removesuffix('_final') + '_lm_rigid_registered'
-
-            with open(logFilePath, "w") as f:
-                f.write(
-                    "final registered plate file name: " + interactionPlateModelNode.GetName() + ".ply" + "\n")
-                f.write(
-                    "final registered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
-                f.write(
-                    "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
-                f.write("full transform node MRML node ID: " + fullTransformNodeID + "\n")
-                f.write(
-                    "rigid registered plate: " + rigidModelName + ".ply" + "\n")
-                f.write(
-                    "rigid registered plate landmark node: " + rigidLmName + ".mrk.json" + "\n")
-                f.write(
-                    "initial fiducial rigid transform: " + self._parameterNode.initialRigidTransform.GetName() + ".h5" + "\n")
-                f.write(
-                    "align posterior stop transform: " + self._parameterNode.alignPosteriorStopTransform.GetName() + ".h5" + "\n")
-                f.write(
-                    "posterior stop rotation rigid transform: " + self._parameterNode.pStopRotationTransform.GetName() + ".h5" + "\n")
-                f.write("interaction transform: " +  "interaction_transform.h5" + "\n")
-        ptsForProjectionDir = os.path.join(allOutRoot, 'points_for_projection')
+        ptsForProjectionDir = os.path.join(outputRoot, 'points_for_projection')
         os.makedirs(ptsForProjectionDir, exist_ok=True)
-        # os.makedirs(os.path.join(allOutDir, 'plate_fit_output'), exist_ok=True)
-        self.ui.saveAllRegPushButton.enabled = False
         self.ui.platePtsBatchPathLineEdit.enabled = True
         self.ui.platePtsBatchPathLineEdit.currentPath = ptsForProjectionDir
+
+
+    # def onSaveAllRegPushButton(self):
+    #     logic = PlateRegistrationLogic()
+    #     registeredPlateInfoDict = json.loads(self._parameterNode.registeredPlateInfoJSON)
+    #     dict_keys = registeredPlateInfoDict.keys()
+    #     print(f"existing folders are {dict_keys}")
+    #     allOutRoot = self.ui.saveAllRegPathLineEdit.currentPath
+    #     allOutDir = os.path.join(allOutRoot, 'plate_registration_results')
+    #     os.makedirs(allOutDir, exist_ok=True)
+    #     for key in dict_keys:
+    #         currentFolderName = key
+    #         outputDir = os.path.join(allOutDir, currentFolderName)
+    #         interactionPlateModelId = registeredPlateInfoDict[currentFolderName]["finalPlateModelNodeID"]
+    #         interactionPlateModelNode = slicer.mrmlScene.GetNodeByID(interactionPlateModelId)
+    #         fullTransformNodeID = registeredPlateInfoDict[currentFolderName]["fullTransformNodeID"]
+    #         fullTransformNode = slicer.mrmlScene.GetNodeByID(fullTransformNodeID)
+    #         currentFoldeItemId = registeredPlateInfoDict[currentFolderName]["folderItemID"]
+    #         slicer.app.ioManager().addDefaultStorageNodes()
+    #         logic.exportCurrentFolder(currentFoldeItemId, outputDir)
+    #         logFileName = "plate_registration.log"
+    #         logFilePath = os.path.join(outputDir, logFileName)
+    #         # logFilePath = os.path.join(outputFolder, logFileName)
+    #         rigidModelName = interactionPlateModelNode.GetName().removesuffix('_final') + '_rigid_registered'
+    #         rigidLmName = interactionPlateModelNode.GetName().removesuffix('_final') + '_lm_rigid_registered'
+    #
+    #         with open(logFilePath, "w") as f:
+    #             f.write(
+    #                 "final registered plate file name: " + interactionPlateModelNode.GetName() + ".ply" + "\n")
+    #             f.write(
+    #                 "final registered plate MRML node ID: " + interactionPlateModelNode.GetID() + "\n")
+    #             f.write(
+    #                 "full transoform node file name: " + fullTransformNode.GetName() + ".h5" + "\n")
+    #             f.write("full transform node MRML node ID: " + fullTransformNodeID + "\n")
+    #             f.write(
+    #                 "rigid registered plate: " + rigidModelName + ".ply" + "\n")
+    #             f.write(
+    #                 "rigid registered plate landmark node: " + rigidLmName + ".mrk.json" + "\n")
+    #             f.write(
+    #                 "initial fiducial rigid transform: " + self._parameterNode.initialRigidTransform.GetName() + ".h5" + "\n")
+    #             f.write(
+    #                 "align posterior stop transform: " + self._parameterNode.alignPosteriorStopTransform.GetName() + ".h5" + "\n")
+    #             f.write(
+    #                 "posterior stop rotation rigid transform: " + self._parameterNode.pStopRotationTransform.GetName() + ".h5" + "\n")
+    #             f.write("interaction transform: " +  "interaction_transform.h5" + "\n")
+    #     ptsForProjectionDir = os.path.join(allOutRoot, 'points_for_projection')
+    #     os.makedirs(ptsForProjectionDir, exist_ok=True)
+    #     # os.makedirs(os.path.join(allOutDir, 'plate_fit_output'), exist_ok=True)
+    #     self.ui.saveAllRegPushButton.enabled = False
+    #     self.ui.platePtsBatchPathLineEdit.enabled = True
+    #     self.ui.platePtsBatchPathLineEdit.currentPath = ptsForProjectionDir
 
 
     def onProjectPtsBatchScene(self):
@@ -1897,7 +1924,7 @@ class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
         p_stop_source = [0, 0, 0]
         source_node.GetNthControlPointPosition(1, p_stop_source)
         
-        p_stop_target = [0, 0, 0 ]
+        p_stop_target = [0, 0, 0]
         target_node.GetNthControlPointPosition(1, p_stop_target)
         
         translation = np.subtract(p_stop_target, p_stop_source)
