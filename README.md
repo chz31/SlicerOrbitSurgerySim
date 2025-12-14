@@ -1,8 +1,6 @@
 # SlicerOrbitSurgerySim — A 3D Slicer Extension for orbital surgery simulation and planning
 
-The **orbitSurgerySim** extension is used to interactively register and compare the fit of surgical plates (typically preformed plates) for repairing orbital fractures (usually caused by blunt force trauma). There are different types of plates with different contours and from different vendors. For how preformed and customzed plates are used for repairing orbital fractures, see this [introduction](https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction).
-
----
+The **SlicerOrbitSurgerySim** extension is used to interactively register and compare the fit of preformed plates for repairing orbital fractures. There are different types and sizes of plates from different vendors. For how preformed and customzed plates are used for repairing orbital fractures, see this [introduction](https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction).
 
 ## Modules
 At this moment,this extension contains two modules:
@@ -11,162 +9,182 @@ At this moment,this extension contains two modules:
    
    Users can interactively adjust plate positions and compare different types of preformed plates across vendors or different ways of plate placement of the same plate. Repeatable ways of plate fit metrics are generated for ranking the fit of plates or performing more detailed downstream analysis.
 
-<img width="350" height="350" alt="Screenshot from 2025-08-26 13-05-46" src="https://github.com/user-attachments/assets/1f382ba1-8821-496f-a263-c1d9af1b3922" />
-
-<sub>Figure 1 </sub><br><sub>The above picture shows a registered 3D model of a preformed plate placed at the fracture side using the plateRegistration module. </sub>
-
 
 2. **mirrorOrbitalRecon**
 
    This module uses the mirrored model of the unfractured contralateral side to reconstruct the fractured orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPACA/MALPACA and FastModelAlign modules of the [SlicerMorph extension](https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file). See Tutorials, Acknowledgement, and license for more information.
 
-<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/a3150e7f-6deb-4f57-a1f4-3c8b02db0efa" />
-<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/aa361c10-ab6f-4b5c-9df6-48a7ce752c45" />
-
-<sub>Figure 2 </sub><br><sub>Left picture is a fractured orbit. Right picture is a reconstructed one using the mirror of the intact contralateral side.</sub>
-
 ---
 
-## Sample Data
+## Detailed tutorials and Methods introduction:
 
-The tutorial below will use open‑source sample data. The sample data from the video tutorials are accessible via the **Sample Data** module of Slicer. The sample skull is segmented from the **post‑dental‑surgery CBCT** skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the **Baffle Planner** tool of the [SlicerHeart extension](https://github.com/SlicerHeart/SlicerHeart)
+## Video tutorials:
+- Plate registration: [Tutorial 1: plate registration](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+- Generate fit metrics: [Tutorial 2: generate fit metrics](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
+- Compare fit of multiple plates: [Tutorial 3: compare plate fit](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3)
+- Modify pre-registered plate position and combine multiple registration results for comparison: [Tutorial 4: edit pre-registered plate](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+- Fractured orbit reconstruction using the mirror of the contralateral side: [mirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
 
-<img width="300" height="300" alt="Screenshot from 2025-08-14 12-43-18" src="https://github.com/user-attachments/assets/5783fbea-25d2-4f3a-9a03-b665746639b5" />
-<sub>Figure 3 </sub><br><sub>Sample data for plate registration. </sub>
+## 🔄 Quick Tutorial: Try Plate Registration and fit comparison (may take 10-20 minutes depends on how you are familiar with Slicer)
 
----
+Follow this simple walkthrough using the sample dataset included in the extension.
 
-## Tutorial *(More detailed tutorial will be provided soon)*
+### 1. Install the Extension
+Download and install the stable Slicer 5.10.0 at https://download.slicer.org/.
 
-### PlateRegistration module tutorial
+Open **Extension Manager** at the upper right corner. Search for 'SlicerOrbitSurgerySim', click, download, and restart Slicer.
+Note that it will also install the **SlicerMorph** extension for you automatically, which is a dependency. If SlicerMorph is failed to install automatically, please manually install it.
 
-#### 1. Plate registration
+<img src="Tutorials/img/quick_step01.png" width="300">
 
-Plate registration requires placing plates at the surface of the intact peripheral bone of the fracture site. Conventional registration typically produced overlapping between models. This would impact accuracy of virtual planning and fit evaluation. The PlateRegistration module utilized the new Slicer tool, **Interaction Transform Handle**, and utility tools (e.g., instant intersection markers, collision detection and markers, align posterior stop) to facilitate users to **interactively** adjust plate position until resting just above the peripheral bone.
+### 2. Load sample data
+The tutorial uses open‑source segmented from the **CBCTDental Surgery** volume accessible at the Slicer Sample Data module.
 
-This video contains detailed instructions and captions about how different plates can be registered and saved for fit comparison.
+Open Module Finder -> **Sample Data** module → click the sample data called **PlateRegistrationSampleDataFiles** to select a directory to download and unzip the folder.<br>
+<img src="Tutorials/img/quick_step02.png" width="350"> <img src="Tutorials/img/quick_step03.png" width="250">
 
-Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 1: plate registration](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+In the unzipped folder, select:
+- skull_sample_left_fracture.ply
+- left_orbit_lm.mrk.json
+- synth_plate_large_left.py
+- synth_plate_large_left_lm.mrk.json
 
-[![Tutorial 1: plate registration](https://img.youtube.com/vi/GVo89_oOOGM/hqdefault.jpg)](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+Drag and drop them to Slicer. Click **OK**. You should see the data loaded in the 3D Window:<br>
+<img src="Tutorials/img/quick_step04.png" width="300"> <img src="Tutorials/img/quick_step05.png" width="250">
 
+In the **Sample Data** Module, click CT volume **CBCTDental Surgery** as the sample data is segmented from it.
+- You should see that the PostDentalSurgery volume is automatically loaded and displayed in 2D slice views. 
+- You can move the top ball or scroll the mouse to find the orbital region. To zoom in or out, hold and drag the right mouse button. To move slice position, hold and drag the mouse scroll button.
 
-#### 2. Generating fit metrics
+<img src="Tutorials/img/quick_step06.png" width="350"> <img src="Tutorials/img/quick_step07.png" width="300">
 
-The second tab of PlateRegistration is for generating fit metrics. It is highly recommended to first reconstruct the fractured orbit using the mirror image of the intact side. See mirrorOrbitalRecon tutorial below for more detail.
+Optional: switch view to **Conventional** or **Conventional Widescreen** layout for better 2D & 3D view.<br>
+<img src="Tutorials/img/quick_step08.png" width="250">
 
-Here is a detailed video tutorial:
-[Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 2: generate fit metrics](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
+### 3. Switch to the plateRegistration module and select data
 
-[![Tutorial 2: generate fit metrics](https://img.youtube.com/vi/IyLVJwoHqCc/hqdefault.jpg)](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
+Open **Module Finder**, type **PlateRegistration** and click "OK" to switch to the module.<br>
+<img src="Tutorials/img/quick_step09.png" width="400"> 
 
-**Fit metrics contain two types of data:**
+**If this is the first time loading the module, it will install the required Python packages. It may take a few minutes.**<br>
+<img src="Tutorials/img/quick_step10.png" width="250">
 
-- First, it computes distances from the plate surface to the orbit. This is done by using the **ray‑casting** method (same as in the ModelToModelDistance module in Slicer). For this region, a reconstructed orbital model is highly recommended. The fractured orbit is usually very difficult to segment and will have large holes. The distances are stored as scalar values in each vertex of the plate model and can be visualized as a **heatmap** on the plate model (see tutorial video above).
+In the **input** section of the **PlateRegistration** tab, select orbit and plate models and landmark files in the drop-down menu<br>
+<img src="Tutorials/img/quick_step11.png" width="450">
 
-- Second, it projects user‑defined plate curve points onto the orbit (reconstructed orbit highly recommended) and measures distances between selected plate margins and the orbit. Points on the plate margins and their orbital projections can be conveniently visualized using the PlateRegistration module (see tutorial video above).
+### 4. Initial registration
+In the **Initial Registration** section, click **initial registration**, then **Registration Posterior Stop**:<br>
+<img src="Tutorials/img/quick_step12.png" width="450">
 
-<img width="350" height="350" alt="image" src="https://github.com/user-attachments/assets/5aaed092-dfa7-454a-bfe8-00ffa1130b37" />
+You should see the plate is roughly aligned to the orbit. <br>
+<img src="Tutorials/img/quick_step13.png" width="350">
 
-<sub>Figure 4 </sub><br><sub>Points projection from margins the synthetic plate (Sample data) to the reconstructed orbit. </sub>
+In the **Node viewer** box, you should also see a folder created to store the plate registration results, which will be saved later
+The name format is **_plate_model_name_time_stamp_**. The time stamp shows when the folder is created to avoid duplicate names.<br>
 
-The curve points can be conveniently placed using Slicer’s generic **Markups** module. For the synthetic plate from the sample data, four curves are placed along margins or other user-defined area:
+<img src="Tutorials/img/quick_step14.png" width="400">
 
-The curve points can be conveniently placed using Slicer generic Markup module. For the synthetic plate from the sample data, four curves are placed along the peripehral are placed:
+### 5. Manual Adjustment
+In the **Plate interactive adjustment**, check the **Enable 3D interaction transform handle" check box.
+If this is the first time, it will install required Python package:<br>
+<img src="Tutorials/img/quick_step15.png" width="500"> <img src="Tutorials/img/quick_step16.png" width="300">
 
-<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/1f1cb61c-3fa5-445d-b5c0-10e45d71e019" />
+The interaction transformed handle will be created with the center of rotation at the posterior stop landmark, and a new subsampled plate model will be displayed in blue.
+In both 3D and 2D slice views, drag the handle bars to rotate the plate. Drag the arrow or center of rotation to translate the plate position if necessary. <br>
+<img src="Tutorials/img/quick_step17.png" width="500">
 
-<sub>Figure 5 </sub><br><sub>Four fiducial curves are placed on the four margins of the synthetic plate. </sub>
+Click **Mark intersection** push button to detect plate-orbit intersection, which will be marked in both 3D (yellow line) and 2D (yellow dots) views. The percentage of intersection points will also be displayed in the information box.<br>
+<img src="Tutorials/img/quick_step18.png" width="400"><br>
+<img src="Tutorials/img/quick_step19.png" width="550"><br>
 
-For the model of a vendor-provided plate, an adiditonal curve is placed along the junction of the medial wall and floor parts of the plate
-
-<img width="300" height="300" alt="Screenshot from 2025-08-26 13-27-34" src="https://github.com/user-attachments/assets/b609423c-5682-47dc-890d-6572862f58d9" />
-
-<sub>Figure 5 </sub><br><sub>Five fiducial curves are placed on four margins of a preformed meshed plates </sub>
-
-Users can placed their own curves and alter the density of points along each curve. Please make sure the number of curves and point density of each curve are consistent across all plates for comparison.
-
-
-#### 3. Compare fit
-
-Here is a detailed video tutorial for how plate fit can be compared:
-
-Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 3: compare plate fit](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3
-)
-
-[![Tutorial 3: compare plate fit](https://img.youtube.com/vi/P6sXtbH0i2w/hqdefault.jpg)](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3)
-
-
-**Fit is compared and ranked by:**
-
-1) Mean overall plate‑orbit distances, which is the mean scalar values (saved as CSV as well) of each plate, measured in mm.
-
-2) The overall mean distance between points on plate margins and their projections on the orbit.
-
-3) Separate ranking of each plate margin based on mean distances from the points along this margin to their projections on the orbit.
-
-All of these data are stored in CSV files and plotted as scatterplots as well (see tutorial above) in:
-
-`/plate/registration/roots/fit_output/compare_fit_output`
-
-<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/8b1cd59a-17be-4fcd-9b84-b0d223a1e260" />
-<sub>Figure 6 </sub><br><sub>the compare fit output folder's content </sub>
-
-Below is a sample plot shows the mean distance between points on each plate margin to the orbital projections from five registered plates represented five plate placement attempts: three using the same large plate, and two using the small plate with a different contour. The accompanied csv shows the actual mean distances as well as the overall mean
-
-<img width="800" height="400" alt="Mean margin-orbit distances" src="https://github.com/user-attachments/assets/3cfc2d3d-f9d4-49f3-abbd-21c62feed259" />
-<img width="2133" height="236" alt="image" src="https://github.com/user-attachments/assets/be11ad78-0d33-4299-b251-8976671e64be" />
-
-<sub>Figure 7 </sub><br><sub>mean distance between points on each plate margin to the orbital projections</sub>
-<br>
-<br>
-<br>
-The below graph and csv shows the distance of all points from one plate margin to their orbital projections across five registered plates. This can facilitate analyze which local regions fit well or not well across different registered plates.
-
-<img width="1000" height="500" alt="anterior_floor_point_dists_to_orbit" src="https://github.com/user-attachments/assets/01865398-2296-4e93-861e-b28f2d95cd06" />
-<img width="2678" height="231" alt="image" src="https://github.com/user-attachments/assets/d668d3a3-7cb8-4925-9992-08d0e9d16d63" />
-
-<sub>Figure 8 </sub><br><sub>The distance of all points from one plate margin to their orbital projections across five registered plates</sub>
+**Ideally, there should be no intersection between plate and orbit. However, the plate models were manually created (using the _Baffle Planner_ module from the _SlicerHeart_ extension) based on roughly tracing the contours of two different skulls.
+Therefore, these plates were merely for demo purposes. Users can stop whenever they want with a suboptimal alignment and move on to the next steps.**
 
 
-**Distance map (heatmap)** scalar values of each plate are stored in the CSV file in:
+### 6. Save the data
+Once done, click **Finalize Registration** to finalize registration. <br>
+<img src="Tutorials/img/quick_step20.png" width="500"><br>
 
-`plate/registration/roots/fit_output/fit_metrics/plate_folder`
-
-The models with scalar values in the VTK format are saved and can be conveniently retrieved. A **histogram** is also provided to visualize distance ranges of all points of the plate model to the orbit.
-
-<img width="500" height="400" alt="synth_plate_large_left_2025-08-14_12_58_15_heatmap_dists" src="https://github.com/user-attachments/assets/ab113e4f-2712-40bc-8164-eb0d4b86c843" />
-<sub>Figure 9 </sub><br><sub>Histogram shows percentage of points in the plate model allocated different distance ranges according to their distances to the orbit </sub>
-
+Select a root directory for saving plate registration results. In this case, a root folder `./Downloads/test_orbitSim` was created as the root folder to store registration and fit comparison results.
+Click **Save current plate registration results** to save the plate registration results.<br>
+<img src="Tutorials/img/quick_step21.png" width="500"><br>
 
 
-#### 4. Facilitate collaborative planning. 
-Users can also use this tool to retrieve existing registered plates and adjust plate positions. This can facilitate collaborative planning and education. This video tutorial shows how to further editing a preregistered plate.
+### 7. Repeat steps 3-7 for another plate
+Once the plate registration results are saved, drag the small plate and landmark files from the downloaded sample data folder into Slicer:
+- synth_plate_small_left.ply
+- synth_plate_small_left_lm.mrk<br>
+<img src="Tutorials/img/quick_step22.png" width="500"><br>
 
-Video tutorial: 
-[Tutorial 4: edit pre-registered plate](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+Repeat step 3-7 for register the small plate and save results into the same directory (no change directory is needed for step 7). <br>
 
-[![Tutorial 4: edit pre-registered plate](https://img.youtube.com/vi/EaOGQawftLU/hqdefault.jpg)](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+### 8. Fit metrics generation
+Fit measurements are based on:<br>
+(1) Computing vertex-to-vertex distances between a plate and reconstructed orbit using functions adapted from the Slicer _Model-to-Model_ Distance module <br>
+(2) Distances between user-defined edge-specific curve points and their projected points on the reconstructed orbit.<br>
+The sample data has provided four curves, each with seven evenly sampled points, for four plate edges.<br>
 
+<img src="Tutorials/img/quick_step23.png" width="300"><br>
 
+Simply copy-paste the two subfolders 'synth_plate_large_left' and 'synth_plate_small_left' from the ./plateRegistrationSampleData/plateMarginPtsForProj folder 
+into the empty folder **points_for_projection** folder automatically created under the root folder you specified or created in **step 7**. <br>
+<img src="Tutorials/img/quick_step24.png" width="700"><br>
 
-### mirrorOrbitRecon module tutorial
+In the sample data folder **plateRegistratIonSampleData**, also drag the **skull_sample_left_orbit_recon.py** into Slicer. This is the model with the left orbit reconstructed using the mirror of the contralateral. You can change color to better visualize it <br>
 
-Video tutorial for register mirrored whole skull and half skull (from sample data) to the fractured side for reconstruction:
-Video tutorial: 
-[mirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
+Go back to Slicer. Switch to the **Plate fit metrics** tab.<br>
+<img src="Tutorials/img/quick_step24_2.png" width="500"><br>
 
-[![mirrorOrbitRecon tutorial](https://img.youtube.com/vi/t951sCvk_lc/hqdefault.jpg)](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
+If Slicer was not closed after **step 8**, you should see the **plate margin points root directory** entry now points to the **_your_root_folder/points_for_projection_** directory. If not, manually select that folder. <br>
+In the **Repaired orbit model** drop-down menu, select the **skull_sample_left_orbit_recon.** model.<br>
+<img src="Tutorials/img/quick_step25.png" width="700"><br>
+
+Click **Compute distance map between the plate and the orbit** and **Project Points from each plate to the orbit** push buttons. Each step may take one to a few minutes.<br>
+<img src="Tutorials/img/quick_step26.png" width="500"><br>
+
+The heatmap models, heatmap distances, and point projection results are saved under `your_root_folder/fit_output/fit_metrics`.
+
+(Optional) You can visualize plate-to-orbit heatmap and point projection results by selecting a plate folder under _your_root_folder/fit_output/fit_metrics_, and click the two visualization buttons. <br>
+<img src="Tutorials/img/quick_step27.png" width="800"><br>
+<img src="Tutorials/img/quick_step28.png" width="350"><br>
+
+If previously loaded heatmap models and point projection results blocked the vision, you can hide them by clicking and closing the "eye" icon to turn off visualizations in the top "Node" box or simply right click and delete them. <br>
+<img src="Tutorials/img/quick_step29.png" width="450"><br>
+
+### 9. Fit Comparison
+Switch to the **Compare fit** tab of the **PlateRegistration** module. <br>
+<img src="Tutorials/img/quick_step30.png" width="450"><br>
+
+If Slicer is not closed after Step 8:
+- The **Compare distances between plate margins and orbits** checkbox should be checked.
+- The directory combobox should point to `your_root_folder/fit_output/fit_metrics`.<br>
+If run this step in a freshly opened Slicer, manually check the check box and select the `your_root_folder/fit_output/fit_metrics_` directory.<br>
+<img src="Tutorials/img/quick_step31.png" width="600"><br>
+
+Click **Compare fitness** push button, wait for one or a few minutes. You should see ranking output displayed:
+- Rankings according the mean plate-edge-to-orbit distances, per edge distances, and mean heatmap distances
+- A scatterplot shows the mean per edge distances of plates <br>
+<img src="Tutorials/img/quick_step32.png" width="400"> <img src="Tutorials/img/quick_step33.png" width="350">
+
+All ranking results, distances, and plots are saved under `your_root_folder/fit_output/compare_fit_comparison`
+
+To visualize superimposition of registered plates with heatmap:
+- Check the "Visualize existing results" checkbox.
+- Click "Show superimposed plates with distance heatmap" to show registered plates with heatmap
+- Click "show points on the margins" to show points on the plate margins. The colors match with the scatterplot colors.
+
+<img src="Tutorials/img/quick_step34.png" width="500"> 
+<img src="Tutorials/img/quick_step35.png" width="500">
 
 
 ---
 
 ## Acknowledgement
 
-The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) have also provided valuable advice for this project.
+The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) and the Slicer Community have also provided valuable advice for this project.
 
 **Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project. **Braedon Gunn** (Texas A&M College of Dentistry) has meticulously segmented many fractured orbital bones that paved the road for this project and tested the extension on multiple patient scans.
 
-The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
+The rigid registration (itk package) and affine registration functions depend on the functions originally developed for **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
 
-The development is supported by the Seedling Grant from Texas A&M Health Science Center awarded to Chi Zhang.
+The development is supported by the Seedling Grant from Texas A&M University Health Science Center awarded to Chi Zhang.
