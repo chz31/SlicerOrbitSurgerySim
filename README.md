@@ -45,10 +45,23 @@ Core functionality includes:
 
 ---
 
+## Installation
+
+**SlicerOrbitSurgerySim** is distributed through the official **3D Slicer Extension Manager**.
+
+1. Install **3D Slicer 5.10.0** from:  
+   https://download.slicer.org/
+
+2. Open [**Extension Manager**](https://slicer.readthedocs.io/en/latest/user_guide/extensions.html) (top-right corner of the Slicer interface).
+
+3. Search for **SlicerOrbitSurgerySim**, install the extension, and **restart Slicer**.
+
+---
+
 ## Get Started
 
 ### New users
-Follow the step-by-step **[Quick Tutorial: Plate Registration and Fit Comparison](Tutorials/QuickTutorial_PlateRegistration.md)**  
+Follow the step-by-step **[Quick Tutorial: Plate Registration and Fit Comparison](Tutorials/00_Quick_Tutorial.md)**  
 *(~10–20 minutes, **prepared sample data included and downloadable directly from Slicer**)*
 
 ### Video tutorials
@@ -68,7 +81,7 @@ Follow the step-by-step **[Quick Tutorial: Plate Registration and Fit Comparison
 - **Fractured orbit reconstruction using contralateral mirroring**  
   [MirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
 
-### -Detailed tutorials: 
+### Detailed tutorials: 
 Detailed tutorials explaining the underlying registration, reconstruction, and fit metric methods will be added soon.
 
 

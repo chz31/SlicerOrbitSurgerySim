@@ -46,7 +46,7 @@ This tutorial uses open-source segmentations derived from the **CBCTDental Surge
 <img src="img/quick_step03.png" width="250">
 
 ### Load the following files into Slicer
-From the unzipped folder, drag and drop:
+From the unzipped folder, drag and drop below files into Slicer:
 
 - `skull_sample_left_fracture.ply`
 - `left_orbit_lm.mrk.json`
@@ -61,7 +61,7 @@ Click **OK** when prompted.
 ### Load the reference CT volume
 In **Sample Data**, click **CBCTDental Surgery**.
 
-- The CT volume will load automatically.
+- The CT volume will load automatically (the skull model is segmented from the 'PostDentalSurgery' volume).
 - Scroll through slices or drag the slice offset (top-bar of a slice window) to locate the orbit.
 - Hold right mouse button and drag: zoom  
 - Hold middle mouse button and drag: move slice position
@@ -110,7 +110,7 @@ The plate should now be roughly aligned with the orbit.
 
 A new folder will appear in the **Node Viewer** to store registration results.  
 Folder name format: _plate_model_name_timestamp_
-- Adding _timestamp_ as a postscript is to make sure each folder has a unique name
+- A timestamp is appended to ensure unique folder names
 
 <img src="img/quick_step14.png" width="500">
 
