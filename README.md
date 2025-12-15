@@ -1,172 +1,96 @@
-# SlicerOrbitSurgerySim — A 3D Slicer Extension for orbital surgery simulation and planning
+# SlicerOrbitSurgerySim  
+### A 3D Slicer extension for orbital fracture repair planning and simulation
 
-The **orbitSurgerySim** extension is used to interactively register and compare the fit of surgical plates (typically preformed plates) for repairing orbital fractures (usually caused by blunt force trauma). There are different types of plates with different contours and from different vendors. For how preformed and customzed plates are used for repairing orbital fractures, see this [introduction](https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction).
+**SlicerOrbitSurgerySim** is a 3D Slicer extension for **interactive registration, evaluation, and comparison of preformed orbital plates** used in the repair of orbital fractures. The extension supports systematic comparison of plate fit across **different vendors, plate sizes, and placement strategies**, enabling quantitative assessment for research and clinical decision support.
+
+For clinical background on the use of preformed and customized plates in orbital fracture repair, see this AO CMF reference:  
+https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction
+
+<p align="center">
+  <img src="Tutorials/img/tutorial_intro.png" width="320">
+</p>
+
+<p align="center">
+<sub>
+Example of a widely used preformed orbital plate registered to a reconstructed orbit using the <strong>PlateRegistration</strong> module.
+</sub>
+</p>
 
 ---
 
 ## Modules
-At this moment,this extension contains two modules:
 
-1. **PlateRegistration**
-   
-   Users can interactively adjust plate positions and compare different types of preformed plates across vendors or different ways of plate placement of the same plate. Repeatable ways of plate fit metrics are generated for ranking the fit of plates or performing more detailed downstream analysis.
+At present, the extension includes two primary modules:
 
-<img width="350" height="350" alt="Screenshot from 2025-08-26 13-05-46" src="https://github.com/user-attachments/assets/1f382ba1-8821-496f-a263-c1d9af1b3922" />
+### 1. **PlateRegistration**
 
-<sub>Figure 1 </sub><br><sub>The above picture shows a registered 3D model of a preformed plate placed at the fracture side using the plateRegistration module. </sub>
+The **PlateRegistration** module enables users to:
 
+- Interactively adjust plate position using 3D transform handles  
+- Register preformed orbital plates to reconstructed or native orbit models  
+- Compute repeatable, quantitative plate-to-orbit fit metrics  
+- Compare plate fit across vendors, plate sizes, or alternative placements of the same plate  
 
-2. **mirrorOrbitalRecon**
-
-   This module uses the mirrored model of the unfractured contralateral side to reconstruct the fractured orbit. A reconstructed orbit is highly recommended for generating plate fit metrics. The core functions are rigid and affine registration methods reused from the ALPACA/MALPACA and FastModelAlign modules of the [SlicerMorph extension](https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file). See Tutorials, Acknowledgement, and license for more information.
-
-<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/a3150e7f-6deb-4f57-a1f4-3c8b02db0efa" />
-<img width="250" height="250" alt="image" src="https://github.com/user-attachments/assets/aa361c10-ab6f-4b5c-9df6-48a7ce752c45" />
-
-<sub>Figure 2 </sub><br><sub>Left picture is a fractured orbit. Right picture is a reconstructed one using the mirror of the intact contralateral side.</sub>
+The generated metrics support **plate ranking**, visualization, and downstream statistical analysis.
 
 ---
 
-## Sample Data
+### 2. **MirrorOrbitRecon**
 
-The tutorial below will use open‑source sample data. The sample data from the video tutorials are accessible via the **Sample Data** module of Slicer. The sample skull is segmented from the **post‑dental‑surgery CBCT** skull volume from the Slicer Sample Data module. Two synthetic plates from two different skulls are also created from the contours of two different skulls using the **Baffle Planner** tool of the [SlicerHeart extension](https://github.com/SlicerHeart/SlicerHeart)
+The **MirrorOrbitRecon** module reconstructs the fractured orbit using a mirrored model of the contralateral (uninjured) side. A reconstructed orbit is **strongly recommended** for robust and interpretable plate fit assessment.
 
-<img width="300" height="300" alt="Screenshot from 2025-08-14 12-43-18" src="https://github.com/user-attachments/assets/5783fbea-25d2-4f3a-9a03-b665746639b5" />
-<sub>Figure 3 </sub><br><sub>Sample data for plate registration. </sub>
-
----
-
-## Tutorial *(More detailed tutorial will be provided soon)*
-
-### PlateRegistration module tutorial
-
-#### 1. Plate registration
-
-Plate registration requires placing plates at the surface of the intact peripheral bone of the fracture site. Conventional registration typically produced overlapping between models. This would impact accuracy of virtual planning and fit evaluation. The PlateRegistration module utilized the new Slicer tool, **Interaction Transform Handle**, and utility tools (e.g., instant intersection markers, collision detection and markers, align posterior stop) to facilitate users to **interactively** adjust plate position until resting just above the peripheral bone.
-
-This video contains detailed instructions and captions about how different plates can be registered and saved for fit comparison.
-
-Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 1: plate registration](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
-
-[![Tutorial 1: plate registration](https://img.youtube.com/vi/GVo89_oOOGM/hqdefault.jpg)](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
-
-
-#### 2. Generating fit metrics
-
-The second tab of PlateRegistration is for generating fit metrics. It is highly recommended to first reconstruct the fractured orbit using the mirror image of the intact side. See mirrorOrbitalRecon tutorial below for more detail.
-
-Here is a detailed video tutorial:
-[Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 2: generate fit metrics](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
-
-[![Tutorial 2: generate fit metrics](https://img.youtube.com/vi/IyLVJwoHqCc/hqdefault.jpg)](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
-
-**Fit metrics contain two types of data:**
-
-- First, it computes distances from the plate surface to the orbit. This is done by using the **ray‑casting** method (same as in the ModelToModelDistance module in Slicer). For this region, a reconstructed orbital model is highly recommended. The fractured orbit is usually very difficult to segment and will have large holes. The distances are stored as scalar values in each vertex of the plate model and can be visualized as a **heatmap** on the plate model (see tutorial video above).
-
-- Second, it projects user‑defined plate curve points onto the orbit (reconstructed orbit highly recommended) and measures distances between selected plate margins and the orbit. Points on the plate margins and their orbital projections can be conveniently visualized using the PlateRegistration module (see tutorial video above).
-
-<img width="350" height="350" alt="image" src="https://github.com/user-attachments/assets/5aaed092-dfa7-454a-bfe8-00ffa1130b37" />
-
-<sub>Figure 4 </sub><br><sub>Points projection from margins the synthetic plate (Sample data) to the reconstructed orbit. </sub>
-
-The curve points can be conveniently placed using Slicer’s generic **Markups** module. For the synthetic plate from the sample data, four curves are placed along margins or other user-defined area:
-
-The curve points can be conveniently placed using Slicer generic Markup module. For the synthetic plate from the sample data, four curves are placed along the peripehral are placed:
-
-<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/1f1cb61c-3fa5-445d-b5c0-10e45d71e019" />
-
-<sub>Figure 5 </sub><br><sub>Four fiducial curves are placed on the four margins of the synthetic plate. </sub>
-
-For the model of a vendor-provided plate, an adiditonal curve is placed along the junction of the medial wall and floor parts of the plate
-
-<img width="300" height="300" alt="Screenshot from 2025-08-26 13-27-34" src="https://github.com/user-attachments/assets/b609423c-5682-47dc-890d-6572862f58d9" />
-
-<sub>Figure 5 </sub><br><sub>Five fiducial curves are placed on four margins of a preformed meshed plates </sub>
-
-Users can placed their own curves and alter the density of points along each curve. Please make sure the number of curves and point density of each curve are consistent across all plates for comparison.
-
-
-#### 3. Compare fit
-
-Here is a detailed video tutorial for how plate fit can be compared:
-
-Video tutorial: [Orbital Surgery Plate Model Registration and Fit Comparison Tutorial 3: compare plate fit](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3
-)
-
-[![Tutorial 3: compare plate fit](https://img.youtube.com/vi/P6sXtbH0i2w/hqdefault.jpg)](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3)
-
-
-**Fit is compared and ranked by:**
-
-1) Mean overall plate‑orbit distances, which is the mean scalar values (saved as CSV as well) of each plate, measured in mm.
-
-2) The overall mean distance between points on plate margins and their projections on the orbit.
-
-3) Separate ranking of each plate margin based on mean distances from the points along this margin to their projections on the orbit.
-
-All of these data are stored in CSV files and plotted as scatterplots as well (see tutorial above) in:
-
-`/plate/registration/roots/fit_output/compare_fit_output`
-
-<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/8b1cd59a-17be-4fcd-9b84-b0d223a1e260" />
-<sub>Figure 6 </sub><br><sub>the compare fit output folder's content </sub>
-
-Below is a sample plot shows the mean distance between points on each plate margin to the orbital projections from five registered plates represented five plate placement attempts: three using the same large plate, and two using the small plate with a different contour. The accompanied csv shows the actual mean distances as well as the overall mean
-
-<img width="800" height="400" alt="Mean margin-orbit distances" src="https://github.com/user-attachments/assets/3cfc2d3d-f9d4-49f3-abbd-21c62feed259" />
-<img width="2133" height="236" alt="image" src="https://github.com/user-attachments/assets/be11ad78-0d33-4299-b251-8976671e64be" />
-
-<sub>Figure 7 </sub><br><sub>mean distance between points on each plate margin to the orbital projections</sub>
-<br>
-<br>
-<br>
-The below graph and csv shows the distance of all points from one plate margin to their orbital projections across five registered plates. This can facilitate analyze which local regions fit well or not well across different registered plates.
-
-<img width="1000" height="500" alt="anterior_floor_point_dists_to_orbit" src="https://github.com/user-attachments/assets/01865398-2296-4e93-861e-b28f2d95cd06" />
-<img width="2678" height="231" alt="image" src="https://github.com/user-attachments/assets/d668d3a3-7cb8-4925-9992-08d0e9d16d63" />
-
-<sub>Figure 8 </sub><br><sub>The distance of all points from one plate margin to their orbital projections across five registered plates</sub>
-
-
-**Distance map (heatmap)** scalar values of each plate are stored in the CSV file in:
-
-`plate/registration/roots/fit_output/fit_metrics/plate_folder`
-
-The models with scalar values in the VTK format are saved and can be conveniently retrieved. A **histogram** is also provided to visualize distance ranges of all points of the plate model to the orbit.
-
-<img width="500" height="400" alt="synth_plate_large_left_2025-08-14_12_58_15_heatmap_dists" src="https://github.com/user-attachments/assets/ab113e4f-2712-40bc-8164-eb0d4b86c843" />
-<sub>Figure 9 </sub><br><sub>Histogram shows percentage of points in the plate model allocated different distance ranges according to their distances to the orbit </sub>
-
-
-
-#### 4. Facilitate collaborative planning. 
-Users can also use this tool to retrieve existing registered plates and adjust plate positions. This can facilitate collaborative planning and education. This video tutorial shows how to further editing a preregistered plate.
-
-Video tutorial: 
-[Tutorial 4: edit pre-registered plate](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
-
-[![Tutorial 4: edit pre-registered plate](https://img.youtube.com/vi/EaOGQawftLU/hqdefault.jpg)](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
-
-
-
-### mirrorOrbitRecon module tutorial
-
-Video tutorial for register mirrored whole skull and half skull (from sample data) to the fractured side for reconstruction:
-Video tutorial: 
-[mirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
-
-[![mirrorOrbitRecon tutorial](https://img.youtube.com/vi/t951sCvk_lc/hqdefault.jpg)](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
-
+Core functionality includes:
+- Rigid and affine registration
+- Dependency: [**SlicerMorph**](https://github.com/SlicerMorph/SlicerMorph?tab=BSD-2-Clause-1-ov-file) extension  
 
 ---
 
-## Acknowledgement
+## Installation
 
-The **Interaction Transform Handle** is created by **Kyle Sunderland** (Perk Lab, Queens University), who has also provided many invaluable technical advice and support for this project. **Dr. Andras Lasso** (Perk Lab, Queens Univeristy) and **Dr. Steve Pieper** (Isomics, Inc.) have also provided valuable advice for this project.
+**SlicerOrbitSurgerySim** is distributed through the official **3D Slicer Extension Manager**.
 
-**Dr. Andrew Read‑Fuller** (Texas A&M College of Dentistry) has provided invaluable clinical insights and advice for this project. **Braedon Gunn** (Texas A&M College of Dentistry) has meticulously segmented many fractured orbital bones that paved the road for this project and tested the extension on multiple patient scans.
+1. Install **3D Slicer 5.10.0** from:  
+   https://download.slicer.org/
 
-The rigid registration (itk package) and affine registration functions are reused from the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension developed by **Dr. A. Murat Maga**'s lab.
+2. Open [**Extension Manager**](https://slicer.readthedocs.io/en/latest/user_guide/extensions.html) (top-right corner of the Slicer interface).
 
-The development is supported by the Seedling Grant from Texas A&M Health Science Center awarded to Chi Zhang.
+3. Search for **SlicerOrbitSurgerySim**, install the extension, and **restart Slicer**.
+
+---
+
+## Get Started
+
+### New users
+Follow the step-by-step **[Quick Tutorial: Plate Registration and Fit Comparison](Tutorials/00_Quick_Tutorial.md)**  
+*(~10–20 minutes, **prepared sample data included and downloadable directly from Slicer**)*
+
+### Video tutorials
+
+- **Plate registration workflow**  
+  [Tutorial 1: Plate registration](https://youtu.be/GVo89_oOOGM?si=q0GWMU0vH_xGB2DE)
+
+- **Generate plate fit metrics**  
+  [Tutorial 2: Generate fit metrics](https://www.youtube.com/watch?v=IyLVJwoHqCc&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=2)
+
+- **Compare fit of multiple plates**  
+  [Tutorial 3: Compare plate fit](https://www.youtube.com/watch?v=P6sXtbH0i2w&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=3)
+
+- **Edit pre-registered plates and combine results**  
+  [Tutorial 4: Edit pre-registered plate](https://www.youtube.com/watch?v=EaOGQawftLU&list=PLvFNLt1ZOjPL5FHAWSB3U7QnUEgU7rQY-&index=4)
+
+- **Fractured orbit reconstruction using contralateral mirroring**  
+  [MirrorOrbitRecon tutorial](https://youtu.be/t951sCvk_lc?si=wHra2VXSp__asPQt)
+
+### Detailed tutorials: 
+Detailed tutorials explaining the underlying registration, reconstruction, and fit metric methods will be added soon.
+
+
+## Acknowledgements
+
+The 3D Slicer community offered important technical advice and feedback during development, especially **Kyle Sunderland** (Perk Lab, Queen’s University), who developed the Interaction Transform Handle in Slicer, as well as **Dr. Andras Lasso** (Perk Lab, Queen’s University) and **Dr. Steve Pieper** (Isomics, Inc.).
+
+**Dr. Andrew Read-Fuller** (Texas A&M University College of Dentistry) contributed essential clinical insights that helped shape the design and evaluation of this work. **Braedon Gunn** (Texas A&M University College of Dentistry) meticulously segmented numerous fractured orbital datasets and tested the extension on multiple patient scans, providing critical validation and feedback.
+
+The rigid (ITK-based) and affine registration components build upon methods originally developed for the **ALPACA** and **FastModelAlign** modules of the [**SlicerMorph**](https://github.com/SlicerMorph) extension, developed by **Dr. A. Murat Maga**’s laboratory.
+
+This project was supported by a **Seedling Grant** from the **Texas A&M University Health Science Center**, awarded to **Chi Zhang**.
