@@ -3,6 +3,12 @@
 
 **SlicerOrbitSurgerySim** is a 3D Slicer extension for **interactive registration, evaluation, and comparison of preformed orbital plates** used in the repair of orbital fractures. The extension supports systematic comparison of plate fit across **different vendors, plate sizes, and placement strategies**, enabling quantitative assessment for research and clinical decision support.
 
+> 📖 **If you use **SlicerOrbitSurgerySim** in your research, please cite:**
+>
+> **Zhang, C., Gunn, B., & Read-Fuller, A. M. (2025).**  
+> *SlicerOrbitSurgerySim: An Open-Source Platform for Virtual Registration and Quantitative Comparison of Preformed Orbital Plates.*  
+> arXiv:2512.19534 — https://arxiv.org/abs/2512.19534
+
 For clinical background on the use of preformed and customized plates in orbital fracture repair, see this AO CMF reference:  
 https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction
 
