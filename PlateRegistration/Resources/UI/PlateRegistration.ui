@@ -58,6 +58,7 @@
           <stringlist notr="true">
            <string>vtkMRMLModelNode</string>
            <string>vtkMRMLMarkupsFiducialNode</string>
+           <string>vtkMRMLMarkupsLineNode</string>
           </stringlist>
          </property>
          <property name="hideChildNodeTypes">

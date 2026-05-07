@@ -758,6 +758,10 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         print(p_stop_rotation)
         self._parameterNode.pStopRotationTransform = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "p_stop_rotation")
         self._parameterNode.pStopRotationTransform.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(p_stop_rotation))
+        registeredPlatePStopLine = slicer.mrmlScene.GetFirstNodeByName("registered_plate_p_stop_line")
+        if registeredPlatePStopLine:
+            registeredPlatePStopLine.SetAndObserveTransformNodeID(self._parameterNode.pStopRotationTransform.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlatePStopLine)
         #
         self._parameterNode.registeredPlateLm.SetAndObserveTransformNodeID(self._parameterNode.pStopRotationTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.registeredPlateLm)
@@ -771,6 +775,11 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.folderNode.SetItemParent(alignPStopTransformItem, self.plateRegistrationFolder)
         pstopRotationItem = self.folderNode.GetItemByDataNode(self._parameterNode.pStopRotationTransform)
         self.folderNode.SetItemParent(pstopRotationItem, self.plateRegistrationFolder)
+        for pStopLineNodeName in ["registered_plate_p_stop_line", "orbit_p_stop_line"]:
+            pStopLineNode = slicer.mrmlScene.GetFirstNodeByName(pStopLineNodeName)
+            if pStopLineNode:
+                pStopLineItem = self.folderNode.GetItemByDataNode(pStopLineNode)
+                self.folderNode.SetItemParent(pStopLineItem, self.plateRegistrationFolder)
         #
         self.ui.posteriorStopRegistrationPushButton.enabled = False
         #
@@ -835,6 +844,9 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetColor([0, 0, 1])
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetSliceIntersectionThickness(3)
             self._parameterNode.interactionPlateModel.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            registeredPlatePStopLine = slicer.mrmlScene.GetFirstNodeByName("registered_plate_p_stop_line")
+            if registeredPlatePStopLine:
+                registeredPlatePStopLine.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
 
             #Turn remeshed plate to labelmap and create an ROI fit to it
             segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
@@ -1227,6 +1239,9 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         orbitModelId = shNode.GetItemByDataNode(self._parameterNode.fractureOrbitModel)
         #
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
+        registeredPlatePStopLine = slicer.mrmlScene.GetFirstNodeByName("registered_plate_p_stop_line")
+        if registeredPlatePStopLine:
+            slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlatePStopLine)
         if self.ui.modifyPlateCheckBox.isChecked():
             # print(f'self._parameterNode.plateNameUpdateReg is {self._parameterNode.plateNameUpdateReg}')
             self._parameterNode.interactionPlateModel.SetName(
@@ -1940,58 +1955,86 @@ class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
     
     
     def rotation_p_stop(self, source_node, target_node):
+        if source_node.GetNumberOfControlPoints() < 2 or target_node.GetNumberOfControlPoints() < 2:
+            raise ValueError("Posterior stop rotation requires at least two fiducial points in each markup list.")
 
-        source_points = np.zeros(shape=(source_node.GetNumberOfControlPoints(), 3))
-        target_points = np.zeros(shape=(target_node.GetNumberOfControlPoints(), 3))
-        
-        m = source_points.shape[1]
-        
-        point = [0, 0, 0]
-        
-        for i in range(source_node.GetNumberOfControlPoints()):
-          source_node.GetNthControlPointPosition(i, point)
-          source_points[i, :] = point
-          # subjectFiducial.SetNthControlPointLocked(i, 1)
-          target_node.GetNthControlPointPosition(i, point)
-          target_points[i, :] = point
-        
-        # Define the point around which you want to rotate
-        rotation_center = target_points[1, :] # Specify the center point as the posterior stop
-        
-        # Calculate the translation to bring the rotation center to the origin
-        translation = -rotation_center
-        
-        # Translate both the source and target point sets
-        translated_source_points = source_points + translation
-        translated_target_points = target_points + translation
-        
-        # Perform singular value decomposition (SVD)
-        U, _, Vt = np.linalg.svd(translated_source_points.T @ translated_target_points, full_matrices=False)
-        
-        
-        # Calculate the optimal rotation matrix
-        rotation_matrix = Vt.T @ U.T
-        
-        # special reflection case
-        m = translated_source_points.shape[1]
-        if np.linalg.det(rotation_matrix) < 0:
-            Vt[m - 1, :] *= -1
-        rotation_matrix = np.dot(Vt.T, U.T)
-        
-        #translation
-        t = rotation_center.T - np.dot(rotation_matrix, rotation_center.T)
-        
-        # homogeneous transformation
+        source_p0 = self.get_point_world(source_node, 0)
+        source_p1 = self.get_point_world(source_node, 1)
+        target_p0 = self.get_point_world(target_node, 0)
+        target_p1 = self.get_point_world(target_node, 1)
+
+        self.create_or_update_line("registered_plate_p_stop_line", source_p0, source_p1)
+        self.create_or_update_line("orbit_p_stop_line", target_p0, target_p1)
+
+        # Rotate the line direction around the posterior stop, which is point 1 of orbitLm.
+        rotation_center = target_p1
+        source_direction = self.normalize(source_p0 - source_p1)
+        target_direction = self.normalize(target_p0 - target_p1)
+
+        axis = np.cross(source_direction, target_direction)
+        axis_norm = np.linalg.norm(axis)
+        dot = np.clip(np.dot(source_direction, target_direction), -1.0, 1.0)
+        angle_degrees = np.degrees(np.arccos(dot))
+
+        if axis_norm < 1e-8:
+            if dot > 0:
+                axis = np.array([0.0, 0.0, 1.0])
+                angle_degrees = 0.0
+            else:
+                raise ValueError(
+                    "The posterior stop lines point in opposite directions. "
+                    "The rotation axis is ambiguous and needs to be defined manually."
+                )
+        else:
+            axis = axis / axis_norm
+
+        rotation_transform = vtk.vtkTransform()
+        rotation_transform.Identity()
+        rotation_transform.RotateWXYZ(angle_degrees, axis[0], axis[1], axis[2])
+
+        vtk_rotation_matrix = rotation_transform.GetMatrix()
+        rotation_matrix = np.identity(4)
+        for i in range(4):
+            for j in range(4):
+                rotation_matrix[i, j] = vtk_rotation_matrix.GetElement(i, j)
+
+        # Rotation around pivot: x' = R x + pivot - R pivot
         T = np.identity(4)
-        T[:3, :3] = rotation_matrix
-        T[:3, 3] = t
-        
-        # rotationTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "svd_rotation_transform")
-        # rotationTransformNode.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(T))
-        
+        T[:3, :3] = rotation_matrix[:3, :3]
+        T[:3, 3] = rotation_center - rotation_matrix[:3, :3] @ rotation_center
+
         return T
 
-    
+
+    def get_point_world(self, markups_node, index):
+        point = np.zeros(3)
+        markups_node.GetNthControlPointPositionWorld(index, point)
+        return point
+
+
+    def normalize(self, vector):
+        norm = np.linalg.norm(vector)
+        if norm < 1e-8:
+            raise ValueError("Cannot compute posterior stop rotation from a zero-length line.")
+        return vector / norm
+
+
+    def create_or_update_line(self, line_name, p0, p1):
+        line_node = slicer.mrmlScene.GetFirstNodeByName(line_name)
+        if line_node is None:
+            line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
+        else:
+            line_node.RemoveAllControlPoints()
+
+        line_node.AddControlPointWorld(p0)
+        line_node.AddControlPointWorld(p1)
+        if line_name == "registered_plate_p_stop_line":
+            line_node.CreateDefaultDisplayNodes()
+            line_node.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
+            line_node.GetDisplayNode().SetColor(1.0, 1.0, 0.0)
+        return line_node
+
+
     def collision_detection(self, modelNode1, modelNode2):
         # Variables
         collisionDetection = vtk.vtkCollisionDetectionFilter()
