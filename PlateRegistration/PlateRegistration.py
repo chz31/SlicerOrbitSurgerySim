@@ -175,6 +175,14 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.logic = None
         self._parameterNode = None
         self._parameterNodeGuiTag = None
+        self._updatingInteractionSliders = False
+        self._interactionSliderBaseMatrix = None
+        self._apAxisRotationTransformNode = None
+        self._apAxisPointsWorld = None
+        self._apAxisObserverTags = []
+        self.registeredPlatePStopLineNode = None
+        self.orbitPStopLineNode = None
+        self._lastInteractionSliderValues = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
 
     def setup(self) -> None:
         """Called when the user opens the module the first time and the widget is initialized."""
@@ -279,9 +287,25 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         #interaction transform
         self.ui.interactionTransformCheckbox.connect("toggled(bool)", self.onInteractionTransform)
         self.ui.realignHandleToPStopButton.connect('clicked(bool)', self.onRealignHandleToPStopButton)
+        if hasattr(self.ui, "realignAPAxisPushButton"):
+            self.ui.realignAPAxisPushButton.connect('clicked(bool)', self.onRealignAPAxisPushButton)
         self.ui.resetToLastStepButton.connect('clicked(bool)', self.onResetToLastStepButton)
         self.ui.resetAllPushButton.connect('clicked(bool)', self.onResetAllPushButton)
         self.ui.finalizePlateRegistrationPushButton.connect('clicked(bool)', self.onFinalizePlateRegistrationPushButton)
+
+        if hasattr(self.ui, "rotateAPAxisCheckBox"):
+            self.ui.rotateAPAxisCheckBox.connect("toggled(bool)", self.onRotateAPAxisCheckBox)
+            self.ui.rotateAPAxisCheckBox.enabled = False
+
+        for slider in self.interactionRotationSliders():
+            slider.minimum = -180.0
+            slider.maximum = 180.0
+            slider.singleStep = 0.5
+            slider.pageStep = 15.0
+            slider.decimals = 1
+            slider.suffix = " deg"
+            slider.connect("valueChanged(double)", self.onInteractionRotationSliderChanged)
+            slider.enabled = False
 
         self.ui.currentRegResultsPathLineEdit.connect("currentPathChanged(QString)", self.onCurrentRegResultsPathLineEdit)
         self.ui.saveCurrentRegPushButton.connect('clicked(bool)', self.onSaveCurrentRegPushButton)
@@ -435,10 +459,326 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             pass
         self.ui.placePlateLmPushButton.enabled = bool(self.ui.plateModelSelector.currentItem())
 
+    def yawSliderWidget(self):
+        return self.ui.yawSliderWidget
+
+    def interactionRotationSliders(self):
+        sliders = []
+        for sliderName in ["pitchSliderWidget", "rollSliderWidget"]:
+            if hasattr(self.ui, sliderName):
+                sliders.append(getattr(self.ui, sliderName))
+        yawSlider = self.yawSliderWidget()
+        if yawSlider:
+            sliders.append(yawSlider)
+        return sliders
+
+    def setInteractionRotationSlidersEnabled(self, enabled):
+        for slider in self.interactionRotationSliders():
+            slider.enabled = enabled
+
+    def setAPAxisRotationMode(self, enabled):
+        self.ui.pitchSliderWidget.enabled = not enabled
+        self.ui.rollSliderWidget.enabled = not enabled
+        self.yawSliderWidget().enabled = True
+        try:
+            self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(not enabled)
+        except AttributeError:
+            pass
+
+    def resetInteractionRotationSliders(self):
+        self._updatingInteractionSliders = True
+        for slider in self.interactionRotationSliders():
+            slider.value = 0.0
+        self._lastInteractionSliderValues = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
+        self._updatingInteractionSliders = False
+
+    def resetPStopLineReferences(self):
+        self.registeredPlatePStopLineNode = None
+        self.orbitPStopLineNode = None
+        self._apAxisPointsWorld = None
+
+    def interactionSliderValue(self, sliderName):
+        if sliderName == "yawSliderWidget":
+            slider = self.yawSliderWidget()
+        else:
+            slider = getattr(self.ui, sliderName, None)
+        return float(slider.value) if slider else 0.0
+
+    def captureInteractionSliderBaseMatrix(self):
+        if not hasattr(self, "interactionTransformNode") or not self.interactionTransformNode:
+            self._interactionSliderBaseMatrix = None
+            return
+        baseMatrix = vtk.vtkMatrix4x4()
+        self.interactionTransformNode.GetMatrixTransformToParent(baseMatrix)
+        self._interactionSliderBaseMatrix = self.arrayFromVtkMatrix(baseMatrix)
+
+    @staticmethod
+    def arrayFromVtkMatrix(matrix):
+        return np.array([[matrix.GetElement(row, column) for column in range(4)] for row in range(4)])
+
+    @staticmethod
+    def rotationMatrixFromAxis(axis, angleDegrees):
+        angleRadians = np.deg2rad(angleDegrees)
+        c = np.cos(angleRadians)
+        s = np.sin(angleRadians)
+        if axis == "LR":
+            return np.array([[1, 0, 0, 0],
+                             [0, c, -s, 0],
+                             [0, s, c, 0],
+                             [0, 0, 0, 1]])
+        if axis == "PA":
+            return np.array([[c, 0, s, 0],
+                             [0, 1, 0, 0],
+                             [-s, 0, c, 0],
+                             [0, 0, 0, 1]])
+        if axis == "IS":
+            return np.array([[c, -s, 0, 0],
+                            [s, c, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 1]])
+
+        raise ValueError(f"Unsupported rotation axis: {axis}")
+
+
+    @staticmethod
+    def rotationAroundPointMatrix(rotationMatrix, centerPoint):
+        centerPoint = np.array(centerPoint)
+        translateToCenter = np.eye(4)
+        translateToCenter[:3, 3] = centerPoint
+        translateFromCenter = np.eye(4)
+        translateFromCenter[:3, 3] = -centerPoint
+        return translateToCenter @ rotationMatrix @ translateFromCenter
+
+    def getInteractionRotationCenter(self):
+        center = [0.0, 0.0, 0.0]
+        try:
+            self.interactionTransformNode.GetCenterOfTransformation(center)
+            return center
+        except TypeError:
+            return self.interactionTransformNode.GetCenterOfTransformation()
+        except AttributeError:
+            return self._parameterNode.orbitLm.GetNthControlPointPosition(1)
+
+    def getRegisteredPlatePStopLineNode(self):
+        if self.registeredPlatePStopLineNode and slicer.mrmlScene.GetNodeByID(self.registeredPlatePStopLineNode.GetID()):
+            return self.registeredPlatePStopLineNode
+
+        if hasattr(self, "plateRegistrationFolder"):
+            shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            children = vtk.vtkIdList()
+            shNode.GetItemChildren(self.plateRegistrationFolder, children)
+            for i in range(children.GetNumberOfIds()):
+                dataNode = shNode.GetItemDataNode(children.GetId(i))
+                if dataNode and dataNode.GetName() == "registered_plate_p_stop_line":
+                    self.registeredPlatePStopLineNode = dataNode
+                    return dataNode
+        return None
+
+    def createRegisteredPlatePStopLineFromCurrentLandmarks(self):
+        if self._parameterNode.registeredPlateLm.GetNumberOfControlPoints() < 2:
+            raise ValueError("Registered plate landmark node must contain two points before AP-axis rotation.")
+
+        point0 = np.zeros(3)
+        point1 = np.zeros(3)
+        self._parameterNode.registeredPlateLm.GetNthControlPointPositionWorld(0, point0)
+        self._parameterNode.registeredPlateLm.GetNthControlPointPositionWorld(1, point1)
+
+        logic = PlateRegistrationLogic()
+        self.registeredPlatePStopLineNode = logic.create_or_update_line(
+            "registered_plate_p_stop_line", point0, point1)
+        if hasattr(self, "folderNode") and hasattr(self, "plateRegistrationFolder"):
+            lineItem = self.folderNode.GetItemByDataNode(self.registeredPlatePStopLineNode)
+            self.folderNode.SetItemParent(lineItem, self.plateRegistrationFolder)
+        if hasattr(self, "interactionTransformNode") and self.interactionTransformNode:
+            self.registeredPlatePStopLineNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        return self.registeredPlatePStopLineNode
+
+    def createOrbitPStopLineFromCurrentLandmarks(self):
+        if self._parameterNode.orbitLm.GetNumberOfControlPoints() < 2:
+            raise ValueError("Orbit landmark node must contain two points before AP-axis rotation.")
+
+        point0 = np.zeros(3)
+        point1 = np.zeros(3)
+        self._parameterNode.orbitLm.GetNthControlPointPositionWorld(0, point0)
+        self._parameterNode.orbitLm.GetNthControlPointPositionWorld(1, point1)
+
+        logic = PlateRegistrationLogic()
+        self.orbitPStopLineNode = logic.create_or_update_line("orbit_p_stop_line", point0, point1)
+        self.orbitPStopLineNode.CreateDefaultDisplayNodes()
+        self.orbitPStopLineNode.GetDisplayNode().SetVisibility(True)
+        self.orbitPStopLineNode.GetDisplayNode().SetVisibility2D(True)
+        if hasattr(self, "folderNode") and hasattr(self, "plateRegistrationFolder"):
+            lineItem = self.folderNode.GetItemByDataNode(self.orbitPStopLineNode)
+            self.folderNode.SetItemParent(lineItem, self.plateRegistrationFolder)
+        return self.orbitPStopLineNode
+
+    def getOrbitPStopLineNode(self):
+        if self.orbitPStopLineNode and slicer.mrmlScene.GetNodeByID(self.orbitPStopLineNode.GetID()):
+            return self.orbitPStopLineNode
+
+        if hasattr(self, "plateRegistrationFolder"):
+            shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            children = vtk.vtkIdList()
+            shNode.GetItemChildren(self.plateRegistrationFolder, children)
+            for i in range(children.GetNumberOfIds()):
+                dataNode = shNode.GetItemDataNode(children.GetId(i))
+                if dataNode and dataNode.GetName() == "orbit_p_stop_line":
+                    self.orbitPStopLineNode = dataNode
+                    return dataNode
+        return None
+
+    def captureAPAxisPointsWorld(self):
+        registeredPlatePStopLine = self.getRegisteredPlatePStopLineNode()
+        if not registeredPlatePStopLine:
+            registeredPlatePStopLine = self.createRegisteredPlatePStopLineFromCurrentLandmarks()
+        if not registeredPlatePStopLine or registeredPlatePStopLine.GetNumberOfControlPoints() < 2:
+            raise ValueError("registered_plate_p_stop_line must exist and contain two points before AP-axis rotation.")
+        registeredPlatePStopLine.GetDisplayNode().SetVisibility(True)
+        registeredPlatePStopLine.GetDisplayNode().SetVisibility2D(True)
+
+        orbitPStopLine = self.getOrbitPStopLineNode()
+        if not orbitPStopLine:
+            orbitPStopLine = self.createOrbitPStopLineFromCurrentLandmarks()
+        if orbitPStopLine:
+            orbitPStopLine.GetDisplayNode().SetVisibility(True)
+            orbitPStopLine.GetDisplayNode().SetVisibility2D(True)
+
+        axisPoint1 = np.zeros(3)
+        axisPoint2 = np.zeros(3)
+        registeredPlatePStopLine.GetNthControlPointPositionWorld(0, axisPoint1)
+        registeredPlatePStopLine.GetNthControlPointPositionWorld(1, axisPoint2)
+        self._apAxisPointsWorld = (axisPoint1.copy(), axisPoint2.copy())
+
+    def axisRotationDeltaMatrix(self, rotationMatrix):
+        if self._apAxisPointsWorld is None:
+            self.captureAPAxisPointsWorld()
+
+        axisPoint1, axisPoint2 = self._apAxisPointsWorld
+
+        axisDirectionZ = axisPoint1 - axisPoint2
+        axisLength = np.linalg.norm(axisDirectionZ)
+        if axisLength == 0:
+            raise ValueError("registered_plate_p_stop_line points cannot be coincident.")
+        axisDirectionZ = axisDirectionZ / axisLength
+
+        planeSource = vtk.vtkPlaneSource()
+        planeSource.SetNormal(axisDirectionZ)
+        planeSource.Update()
+        axisOrigin = np.array(planeSource.GetOrigin())
+        axisDirectionX = np.array(planeSource.GetPoint1()) - axisOrigin
+        axisDirectionY = np.array(planeSource.GetPoint2()) - axisOrigin
+
+        axisToWorld = np.row_stack((
+            np.column_stack((axisDirectionX, axisDirectionY, axisDirectionZ, axisPoint1)),
+            (0, 0, 0, 1)))
+        return axisToWorld @ rotationMatrix @ np.linalg.inv(axisToWorld)
+
+    def createAPAxisRotationTransformNode(self):
+        if self._apAxisRotationTransformNode and slicer.mrmlScene.GetNodeByID(self._apAxisRotationTransformNode.GetID()):
+            return
+
+        self._apAxisRotationTransformNode = slicer.mrmlScene.AddNewNodeByClass(
+            "vtkMRMLTransformNode", "plate_AP_axis_rotation")
+        self._apAxisRotationTransformNode.CreateDefaultDisplayNodes()
+        self._apAxisRotationTransformNode.GetDisplayNode().SetEditorVisibility(False)
+        self._apAxisRotationTransformNode.SetMatrixTransformToParent(vtk.vtkMatrix4x4())
+        if hasattr(self, "folderNode") and hasattr(self, "plateRegistrationFolder"):
+            rotationItem = self.folderNode.GetItemByDataNode(self._apAxisRotationTransformNode)
+            self.folderNode.SetItemParent(rotationItem, self.plateRegistrationFolder)
+
+    # self._interactionSliderBaseMatrix will only copy the interaction transform's current matrix on time:
+    # The situations that initiate the update are: 1) when the AP axis rotation mode is turned on or off, 2) when the interaction transform is enabled while it was previously disabled and when base matrix is None.
+    # 3) when the interaction transform is enabled and the base matrix is None, which can happen when the user enables the interaction transform, then disables it, makes some changes to the scene (e.g., moving the orbit landmarks), and then enables the interaction transform again. In this case we want to make sure the base matrix is updated to reflect the changes made while the interaction transform was disabled.
+    # 4) when the user clicks reset to last step or reset all, which will reset the interaction transform to a previous state and thus require updating the base matrix to reflect the new current state of the interaction transform.
+    # 5) After realign posterior stop, the interaction transform will be updated to the new aligned position, and thus the base matrix should be updated to reflect that.
+    def updateInteractionTransformFromSliders(self):
+        if not hasattr(self, "interactionTransformNode") or not self.interactionTransformNode:
+            return
+        pitch = self.interactionSliderValue("pitchSliderWidget")
+        roll = self.interactionSliderValue("rollSliderWidget")
+        yaw = self.interactionSliderValue("yawSliderWidget")
+
+        center = self.getInteractionRotationCenter()
+
+        rotateAPAxis = hasattr(self.ui, "rotateAPAxisCheckBox") and self.ui.rotateAPAxisCheckBox.isChecked()
+        if rotateAPAxis:
+            if self._interactionSliderBaseMatrix is None:
+                self.captureInteractionSliderBaseMatrix()
+            yawDelta = self.axisRotationDeltaMatrix(self.rotationMatrixFromAxis("IS", yaw))
+            self.createAPAxisRotationTransformNode()
+            self._apAxisRotationTransformNode.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(yawDelta))
+            finalMatrix = yawDelta @ self._interactionSliderBaseMatrix
+        # pitchDeltaValue = pitch - self._lastInteractionSliderValues["pitch"]
+        # This step is to ensure no conflict between interaction transform updates from sliders and from AP axis rotation. 
+        # Base matrix is not used. Instead, the delta rotation between the current value and the last value will be used to update the interaction transform directly.
+        # This prevent cumulating changes, such as 1 + 2 + 3 degree of rotation for three consecutive steps. The change will be 1 + 1 + 1
+        # This also prevent resume to base matrix after update the slider bar for a interactively updated interaction transform.
+        else:
+            pitchDeltaValue = pitch - self._lastInteractionSliderValues["pitch"]
+            rollDeltaValue = roll - self._lastInteractionSliderValues["roll"]
+            yawDeltaValue = yaw - self._lastInteractionSliderValues["yaw"]
+
+            currentMatrix = vtk.vtkMatrix4x4()
+            self.interactionTransformNode.GetMatrixTransformToParent(currentMatrix)
+            currentMatrix = self.arrayFromVtkMatrix(currentMatrix)
+
+            pitchDelta = self.rotationAroundPointMatrix(self.rotationMatrixFromAxis("LR", pitchDeltaValue), center)
+            rollDelta = self.rotationAroundPointMatrix(self.rotationMatrixFromAxis("PA", rollDeltaValue), center)
+            yawDelta = self.rotationAroundPointMatrix(self.rotationMatrixFromAxis("IS", yawDeltaValue), center)
+            finalMatrix = yawDelta @ rollDelta @ pitchDelta @ currentMatrix
+            self._lastInteractionSliderValues = {"pitch": pitch, "roll": roll, "yaw": yaw}
+
+        self.interactionTransformNode.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(finalMatrix))
+        try:
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility2D(True)
+        except (AttributeError, ValueError):
+            pass
+
+    def onInteractionRotationSliderChanged(self, value=None):
+        if self._updatingInteractionSliders:
+            return
+        self.updateInteractionTransformFromSliders()
+
     def enableInitalRegistration(self):
         self.ui.initialRegistrationPushButton.enabled = bool(self.ui.inputOrbitModelSelector.currentItem() and self.ui.orbitFiducialSelector.currentItem()
             and self.ui.plateModelSelector.currentItem() and self.ui.plateFiducialSelector.currentItem())
 
+
+    def onRotateAPAxisCheckBox(self):
+        if self.ui.rotateAPAxisCheckBox.isChecked():
+            if not hasattr(self, "interactionTransformNode") or not self.interactionTransformNode:
+                slicer.util.warningDisplay("Enable the interaction transform before rotating around the AP axis.")
+                self.ui.rotateAPAxisCheckBox.checked = False
+                return
+            self.captureInteractionSliderBaseMatrix()
+            self.resetInteractionRotationSliders()
+            try:
+                self.captureAPAxisPointsWorld()
+            except ValueError as error:
+                slicer.util.warningDisplay(str(error))
+                self.ui.rotateAPAxisCheckBox.checked = False
+                return
+            self.createAPAxisRotationTransformNode()
+            self.setAPAxisRotationMode(True)
+            self.updateInteractionTransformFromSliders()
+        else:
+            self.removeAPAxisRotation()
+            self.captureInteractionSliderBaseMatrix()
+            self.resetInteractionRotationSliders()
+            self.setAPAxisRotationMode(False)
+
+    def removeAPAxisRotation(self):
+        for node, observerTag in self._apAxisObserverTags:
+            try:
+                node.RemoveObserver(observerTag)
+            except RuntimeError:
+                pass
+        self._apAxisObserverTags = []
+        if self._apAxisRotationTransformNode and slicer.mrmlScene.GetNodeByID(self._apAxisRotationTransformNode.GetID()):
+            slicer.mrmlScene.RemoveNode(self._apAxisRotationTransformNode)
+        self._apAxisRotationTransformNode = None
+        self._apAxisPointsWorld = None
 
     # def onCutsomFitDirCheckBox(self):
     #     if self.ui.cutsomFitDirCheckBox.isChecked():
@@ -557,6 +897,8 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onLoadPlateRegPushButton(self):
+        self.resetPStopLineReferences()
+        self.removeAPAxisRotation()
         try:
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(False)
         except:
@@ -653,6 +995,16 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         oldInteractionTransformItem = shNode.GetItemByDataNode(self._parameterNode.lastInteractionTransform)
         shNode.SetItemParent(oldInteractionTransformItem, self.plateRegistrationFolder)
 
+        itemIDToClone = shNode.GetItemByDataNode(rigidLmNode)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        registeredPlateLmAlignedNode = shNode.GetItemDataNode(clonedItemID)
+        registeredPlateLmAlignedNode.SetName(plateBaseName + "_lm_previous")
+        registeredPlateLmAlignedNode.SetAndObserveTransformNodeID(self._parameterNode.lastInteractionTransform.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlateLmAlignedNode)
+        registeredPlateLmAlignedNode.GetDisplayNode().SetVisibility(False)
+        registeredPlateLmAlignedItem = shNode.GetItemByDataNode(registeredPlateLmAlignedNode)
+        shNode.SetItemParent(registeredPlateLmAlignedItem, self.plateRegistrationFolder)
+        self._parameterNode.registeredPlateLm = registeredPlateLmAlignedNode
 
 
         self.ui.inputOrbitModelSelector.enabled = False
@@ -669,6 +1021,8 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.interactionTransformCheckbox.enabled = True
 
     def onInitialRegistrationPushButton(self):
+        self.resetPStopLineReferences()
+        self.removeAPAxisRotation()
         logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         #
@@ -753,11 +1107,22 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.registeredPlateLm)
         self._parameterNode.rigidRegisteredPlateModel .SetAndObserveTransformNodeID(self._parameterNode.alignPosteriorStopTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.rigidRegisteredPlateModel )
+        source_p0 = logic.get_point_world(self._parameterNode.registeredPlateLm, 0)
+        source_p1 = logic.get_point_world(self._parameterNode.registeredPlateLm, 1)
+        target_p0 = logic.get_point_world(self._parameterNode.orbitLm, 0)
+        target_p1 = logic.get_point_world(self._parameterNode.orbitLm, 1)
+        self.registeredPlatePStopLineNode = logic.create_or_update_line(
+            "registered_plate_p_stop_line", source_p0, source_p1, self.getRegisteredPlatePStopLineNode())
+        self.orbitPStopLineNode = logic.create_or_update_line(
+            "orbit_p_stop_line", target_p0, target_p1, self.getOrbitPStopLineNode())
         # One more rigid registration rotating around aligned P stop
-        p_stop_rotation = logic.rotation_p_stop(self._parameterNode.registeredPlateLm, self._parameterNode.orbitLm)
+        p_stop_rotation = logic.rotation_between_lines(source_p0, source_p1, target_p0, target_p1)
         print(p_stop_rotation)
         self._parameterNode.pStopRotationTransform = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "p_stop_rotation")
         self._parameterNode.pStopRotationTransform.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(p_stop_rotation))
+        if self.registeredPlatePStopLineNode:
+            self.registeredPlatePStopLineNode.SetAndObserveTransformNodeID(self._parameterNode.pStopRotationTransform.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(self.registeredPlatePStopLineNode)
         #
         self._parameterNode.registeredPlateLm.SetAndObserveTransformNodeID(self._parameterNode.pStopRotationTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.registeredPlateLm)
@@ -771,6 +1136,10 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.folderNode.SetItemParent(alignPStopTransformItem, self.plateRegistrationFolder)
         pstopRotationItem = self.folderNode.GetItemByDataNode(self._parameterNode.pStopRotationTransform)
         self.folderNode.SetItemParent(pstopRotationItem, self.plateRegistrationFolder)
+        for pStopLineNode in [self.registeredPlatePStopLineNode, self.orbitPStopLineNode]:
+            if pStopLineNode:
+                pStopLineItem = self.folderNode.GetItemByDataNode(pStopLineNode)
+                self.folderNode.SetItemParent(pStopLineItem, self.plateRegistrationFolder)
         #
         self.ui.posteriorStopRegistrationPushButton.enabled = False
         #
@@ -793,27 +1162,28 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True) #visualize in 3D and 2D
             #Set center to posterior stop, which is the second lm in the orbit Lm; change it to user input later
             if self.ui.modifyPlateCheckBox.isChecked():
-                shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-                itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
-                clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
-                registeredPlateLm_clone = shNode.GetItemDataNode(clonedItemID)
-                registeredPlateLm_clone.SetAndObserveTransformNodeID(self._parameterNode.lastInteractionTransform.GetID())
-                slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlateLm_clone)
                 self.interactionTransformNode.SetCenterOfTransformation(
-                    registeredPlateLm_clone.GetNthControlPointPosition(1))
-                slicer.mrmlScene.RemoveNode(registeredPlateLm_clone)
+                    self._parameterNode.registeredPlateLm.GetNthControlPointPosition(1))
             else:
                 self.interactionTransformNode.SetCenterOfTransformation(self._parameterNode.orbitLm.GetNthControlPointPosition(1))
+            self.captureInteractionSliderBaseMatrix()
+            self.resetInteractionRotationSliders()
+            self.setInteractionRotationSlidersEnabled(True)
+            if hasattr(self.ui, "rotateAPAxisCheckBox"):
+                self.ui.rotateAPAxisCheckBox.enabled = True
             #
             self._parameterNode.interactionTransformRecorder = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "interactionTransformRecorder") # record the interaction transform node
 
             self._parameterNode.interactionTransformRecorder.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
             self.ui.realignHandleToPStopButton.enabled = True
+            if hasattr(self.ui, "realignAPAxisPushButton"):
+                self.ui.realignAPAxisPushButton.enabled = True
             self.ui.resetToLastStepButton.enabled = True
             self.ui.createIntersectButton.enabled = True
             self.ui.instantHeatMapPushButton.enabled = True
             self.ui.resetAllPushButton.enabled = True
-            self.ui.instantCollisionDetectionCheckBox.enabled = True
+            self.ui.instantCollisionDetectionCheckBox.checked = 0
+            self.ui.instantCollisionDetectionCheckBox.enabled = False
             self.ui.instantIntersectionMarkerCheckBox.enabled = True
             self.ui.finalizePlateRegistrationPushButton.enabled = True
     
@@ -835,6 +1205,19 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetColor([0, 0, 1])
             self._parameterNode.interactionPlateModel.GetDisplayNode().SetSliceIntersectionThickness(3)
             self._parameterNode.interactionPlateModel.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+            registeredPlatePStopLine = self.getRegisteredPlatePStopLineNode()
+            if not registeredPlatePStopLine:
+                registeredPlatePStopLine = self.createRegisteredPlatePStopLineFromCurrentLandmarks()
+            if registeredPlatePStopLine:
+                registeredPlatePStopLine.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+                registeredPlatePStopLine.GetDisplayNode().SetVisibility(True)
+                registeredPlatePStopLine.GetDisplayNode().SetVisibility2D(True)
+            orbitPStopLine = self.getOrbitPStopLineNode()
+            if not orbitPStopLine:
+                orbitPStopLine = self.createOrbitPStopLineFromCurrentLandmarks()
+            if orbitPStopLine:
+                orbitPStopLine.GetDisplayNode().SetVisibility(True)
+                orbitPStopLine.GetDisplayNode().SetVisibility2D(True)
 
             #Turn remeshed plate to labelmap and create an ROI fit to it
             segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
@@ -1109,16 +1492,21 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
 
     def onRealignHandleToPStopButton(self):
+        if not hasattr(self, "interactionTransformNode") or not self.interactionTransformNode:
+            slicer.util.warningDisplay("Enable the interaction transform before realigning the posterior stop.")
+            return
+
+        if hasattr(self.ui, "rotateAPAxisCheckBox") and self.ui.rotateAPAxisCheckBox.isChecked():
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.removeAPAxisRotation()
+            self.setAPAxisRotationMode(False)
+
         # Clone plate lm
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
         clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
         plateLmCloneNode = shNode.GetItemDataNode(clonedItemID)
         plateLmCloneNode.SetName('registered_plate_lm_cloned')
-
-        if self.ui.modifyPlateCheckBox.isChecked():
-            plateLmCloneNode.SetAndObserveTransformNodeID(self._parameterNode.lastInteractionTransform.GetID())
-            slicer.vtkSlicerTransformLogic().hardenTransform(plateLmCloneNode)
 
         plateLmCloneNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(plateLmCloneNode)
@@ -1143,16 +1531,110 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         
         slicer.mrmlScene.RemoveNode(realignPStopTransformNode)
         slicer.mrmlScene.RemoveNode(plateLmCloneNode)
+        self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True)
+        self.captureInteractionSliderBaseMatrix()
+        self.resetInteractionRotationSliders()
+        self.setInteractionRotationSlidersEnabled(True)
+        try:
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility2D(True)
+        except (AttributeError, ValueError):
+            pass
+
+
+    def onRealignAPAxisPushButton(self):
+        if not hasattr(self, "interactionTransformNode") or not self.interactionTransformNode:
+            slicer.util.warningDisplay("Enable the interaction transform before realigning the AP axis.")
+            return
+
+        if hasattr(self.ui, "rotateAPAxisCheckBox") and self.ui.rotateAPAxisCheckBox.isChecked():
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.removeAPAxisRotation()
+
+        logic = PlateRegistrationLogic()
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+
+        itemIDToClone = shNode.GetItemByDataNode(self._parameterNode.registeredPlateLm)
+        clonedItemID = slicer.modules.subjecthierarchy.logic().CloneSubjectHierarchyItem(shNode, itemIDToClone)
+        plateLmCloneNode = shNode.GetItemDataNode(clonedItemID)
+        plateLmCloneNode.SetName("registered_plate_lm_ap_axis_realign")
+        plateLmCloneNode.SetAndObserveTransformNodeID(self.interactionTransformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(plateLmCloneNode)
+
+        source_p0 = logic.get_point_world(plateLmCloneNode, 0)
+        source_p1 = logic.get_point_world(plateLmCloneNode, 1)
+        orbitPStopLineNode = self.getOrbitPStopLineNode()
+        if not orbitPStopLineNode:
+            orbitPStopLineNode = self.createOrbitPStopLineFromCurrentLandmarks()
+        target_p0, target_p1 = logic.get_line_points_world(orbitPStopLineNode)
+
+        registeredPlatePStopLineNode = self.getRegisteredPlatePStopLineNode()
+        if not registeredPlatePStopLineNode:
+            registeredPlatePStopLineNode = self.createRegisteredPlatePStopLineFromCurrentLandmarks()
+        self.registeredPlatePStopLineNode = registeredPlatePStopLineNode
+        self.orbitPStopLineNode = orbitPStopLineNode
+        p_stop_rotation = logic.rotation_between_lines(source_p0, source_p1, target_p0, target_p1)
+
+        pStopRotationTransformNode = slicer.mrmlScene.AddNewNodeByClass(
+            "vtkMRMLTransformNode", "realign_AP_axis_transform")
+        pStopRotationTransformNode.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(p_stop_rotation))
+
+        self.interactionTransformNode.SetAndObserveTransformNodeID(pStopRotationTransformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(self.interactionTransformNode)
+        self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(True)
+
+        for pStopLineNode in [self.registeredPlatePStopLineNode, self.orbitPStopLineNode]:
+            if pStopLineNode:
+                pStopLineItem = self.folderNode.GetItemByDataNode(pStopLineNode)
+                self.folderNode.SetItemParent(pStopLineItem, self.plateRegistrationFolder)
+                pStopLineNode.GetDisplayNode().SetVisibility(True)
+                pStopLineNode.GetDisplayNode().SetVisibility2D(True)
+
+        slicer.mrmlScene.RemoveNode(pStopRotationTransformNode)
+        slicer.mrmlScene.RemoveNode(plateLmCloneNode)
+
+        self.ui.interactionTransformCheckbox.checked = 1
+        self.ui.interactionTransformCheckbox.enabled = False
+        if hasattr(self.ui, "rotateAPAxisCheckBox"):
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.ui.rotateAPAxisCheckBox.enabled = True
+        self.setAPAxisRotationMode(False)
+        self.setInteractionRotationSlidersEnabled(True)
+        self.captureInteractionSliderBaseMatrix()
+        self.resetInteractionRotationSliders()
+        try:
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility2D(True)
+        except (AttributeError, ValueError):
+            pass
 
 
 
     def onResetToLastStepButton(self):
+        if hasattr(self.ui, "rotateAPAxisCheckBox") and self.ui.rotateAPAxisCheckBox.isChecked():
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.removeAPAxisRotation()
+            self.setAPAxisRotationMode(False)
         transformMatrix = vtk.vtkMatrix4x4() #identiy matrix
         self.interactionTransformNode.SetMatrixTransformToParent(transformMatrix)
+        self.captureInteractionSliderBaseMatrix()
+        self.resetInteractionRotationSliders()
+        try:
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility(True)
+            self._parameterNode.interactionPlateModel.GetDisplayNode().SetVisibility2D(True)
+        except (AttributeError, ValueError):
+            pass
 
 
 
     def onResetAllPushButton(self):
+        self.removeAPAxisRotation()
+        if hasattr(self.ui, "rotateAPAxisCheckBox"):
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.ui.rotateAPAxisCheckBox.enabled = False
+        self.resetPStopLineReferences()
+        self.setInteractionRotationSlidersEnabled(False)
+        self.resetInteractionRotationSliders()
         self.ui.interactionTransformCheckbox.checked=0
         self.ui.interactionTransformCheckbox.enabled=False
         self.ui.instantCollisionDetectionCheckBox.checked=0
@@ -1162,6 +1644,8 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.createIntersectButton.enabled=False
         self.ui.instantHeatMapPushButton.enabled=False
         self.ui.realignHandleToPStopButton.enabled=False
+        if hasattr(self.ui, "realignAPAxisPushButton"):
+            self.ui.realignAPAxisPushButton.enabled=False
         self.ui.resetToLastStepButton.enabled=False
         self.ui.resetAllPushButton.enabled=False
         self.ui.finalizePlateRegistrationPushButton.enabled = False
@@ -1218,23 +1702,42 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         logic = PlateRegistrationLogic()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         interactionFlag = self.ui.interactionTransformCheckbox.checked
+        try:
+            interactionPlateModel = self._parameterNode.interactionPlateModel
+        except (AttributeError, ValueError):
+            interactionPlateModel = None
+        if interactionPlateModel is None:
+            if interactionFlag == 1:
+                slicer.util.warningDisplay("No interactive plate model is available to finalize. Enable the interaction transform before finalizing.")
+                return
+            interactionPlateModel = self._parameterNode.rigidRegisteredPlateModel
+            self._parameterNode.interactionPlateModel = interactionPlateModel
         if interactionFlag == 1:
             self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(False)
-            interactionPlateId = shNode.GetItemByDataNode(self._parameterNode.interactionPlateModel)
+            interactionPlateId = shNode.GetItemByDataNode(interactionPlateModel)
         else:
             rigidPlateModelId = shNode.GetItemByDataNode(self._parameterNode.rigidRegisteredPlateModel)
             print("no interaction transform performed")
         orbitModelId = shNode.GetItemByDataNode(self._parameterNode.fractureOrbitModel)
         #
-        slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.interactionPlateModel)
+        slicer.vtkSlicerTransformLogic().hardenTransform(interactionPlateModel)
+        registeredPlatePStopLine = self.getRegisteredPlatePStopLineNode()
+        if registeredPlatePStopLine:
+            slicer.vtkSlicerTransformLogic().hardenTransform(registeredPlatePStopLine)
+            registeredPlatePStopLine.GetDisplayNode().SetVisibility(False)
+            registeredPlatePStopLine.GetDisplayNode().SetVisibility2D(False)
+        orbitPStopLine = self.getOrbitPStopLineNode()
+        if orbitPStopLine:
+            orbitPStopLine.GetDisplayNode().SetVisibility(False)
+            orbitPStopLine.GetDisplayNode().SetVisibility2D(False)
         if self.ui.modifyPlateCheckBox.isChecked():
             # print(f'self._parameterNode.plateNameUpdateReg is {self._parameterNode.plateNameUpdateReg}')
-            self._parameterNode.interactionPlateModel.SetName(
+            interactionPlateModel.SetName(
                 self._parameterNode.plateNameUpdateReg + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.plateNameUpdateReg
         else:
             # self._parameterNode.interactionPlateModel = self._parameterNode.originalPlateModel
-            self._parameterNode.interactionPlateModel.SetName(
+            interactionPlateModel.SetName(
                 self._parameterNode.originalPlateModel.GetName() + "_final")
             allTransformNodeName = "allTransform_" + self._parameterNode.originalPlateModel.GetName()
         self._parameterNode.allTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', allTransformNodeName)
@@ -1279,6 +1782,17 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
 
         logic.writeParameterDict(interactionFlag, self.plateRegistrationFolder) #store current registration data in a directionary for reusing
 
+        self.removeAPAxisRotation()
+        if hasattr(self.ui, "rotateAPAxisCheckBox"):
+            self.ui.rotateAPAxisCheckBox.checked = 0
+            self.ui.rotateAPAxisCheckBox.enabled = False
+        try:
+            self.interactionTransformNode.GetDisplayNode().SetEditorVisibility(False)
+        except AttributeError:
+            pass
+        self.resetPStopLineReferences()
+        self.setInteractionRotationSlidersEnabled(False)
+        self.resetInteractionRotationSliders()
         self.ui.interactionTransformCheckbox.checked=0
         self.ui.interactionTransformCheckbox.enabled=False
         self.ui.instantCollisionDetectionCheckBox.checked=0
@@ -1288,6 +1802,8 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         self.ui.createIntersectButton.enabled=False
         self.ui.instantHeatMapPushButton.enabled=False
         self.ui.realignHandleToPStopButton.enabled=False
+        if hasattr(self.ui, "realignAPAxisPushButton"):
+            self.ui.realignAPAxisPushButton.enabled=False
         self.ui.resetToLastStepButton.enabled=False
         self.ui.resetAllPushButton.enabled=False
         self.ui.finalizePlateRegistrationPushButton.enabled = False
@@ -1938,60 +2454,89 @@ class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
         return T
 
     
-    
-    def rotation_p_stop(self, source_node, target_node):
+    def rotation_between_lines(self, source_p0, source_p1, target_p0, target_p1):
+        source_p0 = np.array(source_p0)
+        source_p1 = np.array(source_p1)
+        target_p0 = np.array(target_p0)
+        target_p1 = np.array(target_p1)
 
-        source_points = np.zeros(shape=(source_node.GetNumberOfControlPoints(), 3))
-        target_points = np.zeros(shape=(target_node.GetNumberOfControlPoints(), 3))
-        
-        m = source_points.shape[1]
-        
-        point = [0, 0, 0]
-        
-        for i in range(source_node.GetNumberOfControlPoints()):
-          source_node.GetNthControlPointPosition(i, point)
-          source_points[i, :] = point
-          # subjectFiducial.SetNthControlPointLocked(i, 1)
-          target_node.GetNthControlPointPosition(i, point)
-          target_points[i, :] = point
-        
-        # Define the point around which you want to rotate
-        rotation_center = target_points[1, :] # Specify the center point as the posterior stop
-        
-        # Calculate the translation to bring the rotation center to the origin
-        translation = -rotation_center
-        
-        # Translate both the source and target point sets
-        translated_source_points = source_points + translation
-        translated_target_points = target_points + translation
-        
-        # Perform singular value decomposition (SVD)
-        U, _, Vt = np.linalg.svd(translated_source_points.T @ translated_target_points, full_matrices=False)
-        
-        
-        # Calculate the optimal rotation matrix
-        rotation_matrix = Vt.T @ U.T
-        
-        # special reflection case
-        m = translated_source_points.shape[1]
-        if np.linalg.det(rotation_matrix) < 0:
-            Vt[m - 1, :] *= -1
-        rotation_matrix = np.dot(Vt.T, U.T)
-        
-        #translation
-        t = rotation_center.T - np.dot(rotation_matrix, rotation_center.T)
-        
-        # homogeneous transformation
+        # Rotate the line direction around the posterior stop, which is point 1 of orbitLm.
+        rotation_center = target_p1
+        source_direction = self.normalize(source_p0 - source_p1)
+        target_direction = self.normalize(target_p0 - target_p1)
+
+        axis = np.cross(source_direction, target_direction)
+        axis_norm = np.linalg.norm(axis)
+        dot = np.clip(np.dot(source_direction, target_direction), -1.0, 1.0)
+        angle_degrees = np.degrees(np.arccos(dot))
+
+        if axis_norm < 1e-8:
+            if dot > 0:
+                axis = np.array([0.0, 0.0, 1.0])
+                angle_degrees = 0.0
+            else:
+                raise ValueError(
+                    "The posterior stop lines point in opposite directions. "
+                    "The rotation axis is ambiguous and needs to be defined manually."
+                )
+        else:
+            axis = axis / axis_norm
+
+        rotation_transform = vtk.vtkTransform()
+        rotation_transform.Identity()
+        rotation_transform.RotateWXYZ(angle_degrees, axis[0], axis[1], axis[2])
+
+        vtk_rotation_matrix = rotation_transform.GetMatrix()
+        rotation_matrix = np.identity(4)
+        for i in range(4):
+            for j in range(4):
+                rotation_matrix[i, j] = vtk_rotation_matrix.GetElement(i, j)
+
+        # Rotation around pivot: x' = R x + pivot - R pivot
         T = np.identity(4)
-        T[:3, :3] = rotation_matrix
-        T[:3, 3] = t
-        
-        # rotationTransformNode =  slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTransformNode', "svd_rotation_transform")
-        # rotationTransformNode.SetMatrixTransformToParent(slicer.util.vtkMatrixFromArray(T))
-        
+        T[:3, :3] = rotation_matrix[:3, :3]
+        T[:3, 3] = rotation_center - rotation_matrix[:3, :3] @ rotation_center
+
         return T
 
-    
+    def get_point_world(self, markups_node, index):
+        point = np.zeros(3)
+        markups_node.GetNthControlPointPositionWorld(index, point)
+        return point
+
+
+    def get_line_points_world(self, line_node):
+        if not line_node or line_node.GetNumberOfControlPoints() < 2:
+            raise ValueError("Line node must contain two points.")
+        point0 = np.zeros(3)
+        point1 = np.zeros(3)
+        line_node.GetNthControlPointPositionWorld(0, point0)
+        line_node.GetNthControlPointPositionWorld(1, point1)
+        return point0, point1
+
+
+    def normalize(self, vector):
+        norm = np.linalg.norm(vector)
+        if norm < 1e-8:
+            raise ValueError("Cannot compute posterior stop rotation from a zero-length line.")
+        return vector / norm
+
+
+    def create_or_update_line(self, line_name, p0, p1, line_node=None):
+        if line_node is None:
+            line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
+        else:
+            line_node.RemoveAllControlPoints()
+
+        line_node.AddControlPointWorld(p0)
+        line_node.AddControlPointWorld(p1)
+        line_node.CreateDefaultDisplayNodes()
+        if line_name == "registered_plate_p_stop_line":
+            line_node.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
+            line_node.GetDisplayNode().SetColor(1.0, 1.0, 0.0)
+        return line_node
+
+
     def collision_detection(self, modelNode1, modelNode2):
         # Variables
         collisionDetection = vtk.vtkCollisionDetectionFilter()
@@ -2133,10 +2678,8 @@ class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
                     ext = ".ply"
                 elif dataNode.IsA("vtkMRMLTransformNode"):
                     ext = ".h5"
-                elif dataNode.IsA("vtkMRMLMarkupsFiducialNode"):
+                elif dataNode.IsA("vtkMRMLMarkupsNode"):
                     ext = ".mrk.json"
-                elif dataNode.IsA("vtkMRMLMarkupsROINode"):
-                    ext = ".mark.json"
                 else:
                     ext = ".vtk"
                 #
