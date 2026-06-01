@@ -5,9 +5,9 @@
 
 > 📖 **If you use **SlicerOrbitSurgerySim** in your research, please cite:**
 >
-> **Zhang, C., Gunn, B., & Read-Fuller, A. M. (2025).**  
+> **Zhang, C., Gunn, B., & Read-Fuller, A. M. (2026).**  
 > *SlicerOrbitSurgerySim: An Open-Source Platform for Virtual Registration and Quantitative Comparison of Preformed Orbital Plates.*  
-> arXiv:2512.19534 — https://arxiv.org/abs/2512.19534
+> Journal of Oral and Maxillofacial Surgery — [https://doi.org/10.1016/j.joms.2026.04.020](https://doi.org/10.1016/j.joms.2026.04.020)
 
 For clinical background on the use of preformed and customized plates in orbital fracture repair, see this AO CMF reference:  
 https://surgeryreference.aofoundation.org/cmf/trauma/midface/orbit-floor/reconstruction
