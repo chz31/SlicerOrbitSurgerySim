@@ -1107,10 +1107,10 @@ class PlateRegistrationWidget(ScriptedLoadableModuleWidget, VTKObservationMixin)
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.registeredPlateLm)
         self._parameterNode.rigidRegisteredPlateModel .SetAndObserveTransformNodeID(self._parameterNode.alignPosteriorStopTransform.GetID())
         slicer.vtkSlicerTransformLogic().hardenTransform(self._parameterNode.rigidRegisteredPlateModel )
-        source_p0 = logic.get_point_world(self._parameterNode.registeredPlateLm, 0)
-        source_p1 = logic.get_point_world(self._parameterNode.registeredPlateLm, 1)
-        target_p0 = logic.get_point_world(self._parameterNode.orbitLm, 0)
-        target_p1 = logic.get_point_world(self._parameterNode.orbitLm, 1)
+        source_p0 = logic.get_point_world(self._parameterNode.registeredPlateLm, 1)
+        source_p1 = logic.get_point_world(self._parameterNode.registeredPlateLm, 0)
+        target_p0 = logic.get_point_world(self._parameterNode.orbitLm, 1)
+        target_p1 = logic.get_point_world(self._parameterNode.orbitLm, 0)
         self.registeredPlatePStopLineNode = logic.create_or_update_line(
             "registered_plate_p_stop_line", source_p0, source_p1, self.getRegisteredPlatePStopLineNode())
         self.orbitPStopLineNode = logic.create_or_update_line(
@@ -2438,10 +2438,10 @@ class PlateRegistrationLogic(ScriptedLoadableModuleLogic):
     
     def align_p_stop(self, source_node, target_node):
         p_stop_source = [0, 0, 0]
-        source_node.GetNthControlPointPosition(1, p_stop_source)
+        source_node.GetNthControlPointPosition(0, p_stop_source)
         
         p_stop_target = [0, 0, 0]
-        target_node.GetNthControlPointPosition(1, p_stop_target)
+        target_node.GetNthControlPointPosition(0, p_stop_target)
         
         translation = np.subtract(p_stop_target, p_stop_source)
         
